@@ -5,5 +5,5 @@ COPY package.json ./
 RUN npm install
 COPY . .
 EXPOSE 8080
-RUN bun build
-CMD ["bun", "start"]
+RUN npm build
+CMD ["npm", "start"]
