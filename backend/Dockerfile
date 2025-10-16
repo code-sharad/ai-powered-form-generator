@@ -1,9 +1,9 @@
-FROM node:22-slim
+FROM oven/bun:latest
 
 WORKDIR /usr/src/app
 COPY package.json ./
-RUN npm install
+RUN bun install
 COPY . .
 EXPOSE 8080
-RUN npm build
-CMD ["npm", "start"]
+RUN bun run build
+CMD ["bun", "start"]
