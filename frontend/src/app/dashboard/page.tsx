@@ -164,12 +164,7 @@ export default function DashboardPage() {
               <p className="text-[13px] text-[#a1a1a1] text-center max-w-sm mb-8">
                 Create your first AI-powered form using the prompt below or click the button above.
               </p>
-              <Button
-                className="h-9 px-4 text-[13px] bg-white text-black hover:bg-[#fafafa] border-0 rounded-md font-medium"
-              >
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
-                Create Form
-              </Button>
+
             </div>
           ) : (
             <div className="space-y-8">
@@ -321,18 +316,18 @@ export default function DashboardPage() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent
                                 align="end"
-                                className="bg-[#0a0a0a] border-[#333333] text-white min-w-[160px]"
+                                className="bg-[#0a0a0a] border-[#333333]  text-white min-w-[160px]"
                               >
                                 <DropdownMenuItem
                                   onClick={() => handleEdit(form._id)}
-                                  className="hover:bg-[#1a1a1a] focus:bg-[#1a1a1a] cursor-pointer text-[13px]"
+                                  className="hover:bg-[#1a1a1a] focus:bg-[#1a1a1a] focus:text-white cursor-pointer text-[13px]"
                                 >
                                   Edit Form
                                 </DropdownMenuItem>
                                 {!form.sharing?.isPublic && (
                                   <DropdownMenuItem
                                     onClick={() => handlePublish(form._id)}
-                                    className="hover:bg-[#1a1a1a] focus:bg-[#1a1a1a] cursor-pointer text-[13px]"
+                                    className="hover:bg-[#1a1a1a] focus:bg-[#1a1a1a] focus:text-white cursor-pointer text-[13px]"
                                   >
                                     Publish Form
                                   </DropdownMenuItem>

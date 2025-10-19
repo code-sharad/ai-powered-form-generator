@@ -30,7 +30,7 @@ export function AIPromptBar() {
         toast.success('Form generated successfully!');
         setPrompt('');
         // Navigate to forms list or builder
-        router.push('/dashboard/forms');
+        router.push('/dashboard');
       } else {
         toast.error('Failed to generate form');
       }

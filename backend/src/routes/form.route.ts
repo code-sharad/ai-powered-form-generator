@@ -64,8 +64,9 @@ Guidelines:
 - Make fields relevant to the request
 - Mark important fields as mandatory (mand: true)
 - Include appropriate field types for the use case
-- Add validation rules where needed and don't add terms & conditions type fields
-- Ensure field displayNames are user-friendly`;
+- Add validation rules where needed
+- Ensure field displayNames are user-friendly
+`;
 
   try {
     // Get response from LLM

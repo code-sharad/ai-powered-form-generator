@@ -177,9 +177,31 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
         );
 
       case 'CHECKBOX':
+        // Handle both single checkbox and multiple checkboxes
+        if (!field.choices || field.choices.length === 0) {
+          // Single checkbox (e.g., "I agree to terms")
+          const boolValue = value === true || value === 'true';
+          return (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id={field.fieldId}
+                checked={boolValue}
+                onCheckedChange={(checked) => onChange(checked)}
+              />
+              <Label
+                htmlFor={field.fieldId}
+                className="text-sm font-normal cursor-pointer"
+              >
+                {field.placeholder || field.displayName}
+              </Label>
+            </div>
+          );
+        }
+
+        // Multiple checkboxes with choices
         return (
-          <div className="space-y-2 ">
-            {field.choices?.map((choice, idx) => (
+          <div className="space-y-2">
+            {field.choices.map((choice, idx) => (
               <div key={idx} className="flex items-center space-x-2">
                 <Checkbox
                   id={`${field.fieldId}-${idx}`}
@@ -192,7 +214,12 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
                     }
                   }}
                 />
-                <Label htmlFor={`${field.fieldId}-${idx} `}>{choice}</Label>
+                <Label
+                  htmlFor={`${field.fieldId}-${idx}`}
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  {choice}
+                </Label>
               </div>
             ))}
           </div>
