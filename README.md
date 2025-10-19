@@ -8,21 +8,21 @@ A full-stack application to generate, build, publish, and collect submissions fo
 - Auth: JWT auth flow (client store + API)
 - Storage/Uploads: Cloudinary (configurable)
 
----
+
 
 ## Monorepo Layout
 
 - `frontend/` Next.js app (dashboard, form builder, public forms)
 - `backend/` API server (auth, forms, submissions, upload)
 
----
+
 
 ## Prerequisites
 - Node.js 18+ (and optionally Bun for backend)
 - pnpm or npm (either is fine; project includes lockfiles)
 - Cloudinary account (for uploads)
 
----
+
 
 ## Setup
 
@@ -79,7 +79,7 @@ bun dev
 ```
 
 
----
+
 
 ## Using the App
 
@@ -93,7 +93,7 @@ bun dev
    - Toggle publish on a form to generate a public URL
    - Copy and share the link; submissions will appear in the dashboard
 
----
+
 
 ## Example: Prompt → Form
 
@@ -104,12 +104,14 @@ Create a Generic Feedback Form.
 ![alt text](image.png)
 
 Prompt:
-```create form for rspv registration.
+```
+create form for rspv registration.
 ```
 ![alt text](image-1.png)
 
 Prompt:
-```I need a signup form with name, email, age, and profile picture.
+```
+I need a signup form with name, email, age, and profile picture.
 ```
 ![alt text](image-2.png)
 
