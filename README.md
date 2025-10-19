@@ -2,6 +2,10 @@ AI-Powered Form Generator
 
 A full-stack application to generate, build, publish, and collect submissions for forms using AI assistance.
 
+## Demo Video
+![demo](assets/AI%20Form%20Builder.mp4)
+
+
 ### Tech Stack
 - Frontend: Next.js 15, TypeScript, Tailwind CSS, shadcn/ui, Recharts
 - Backend: Bun/Node, TypeScript, Express
@@ -101,21 +105,29 @@ Prompt:
 ```
 Create a Generic Feedback Form.
 ```
-![alt text](image.png)
+![alt text](assets/image.png)
 
 Prompt:
 ```
 create form for rspv registration.
 ```
-![alt text](image-1.png)
+![alt text](assets/image-1.png)
 
 Prompt:
 ```
 I need a signup form with name, email, age, and profile picture.
 ```
-![alt text](image-2.png)
+![alt text](assets/image-2.png)
 
 
 
+### Future improvements
+- Improve AI form generation accuracy (better prompts, fine-tuning)
+- Enhance user interface and experience (forms, dashboard)
+- Implement analytics dashboard for form submissions
+- OAuth integration (Google, Facebook, etc.)
+- CSV/Excel Export - Export submissions in spreadsheet formats
 
-
+### Limitations
+- AI-generated forms may require manual adjustments for accuracy
+- No built-in duplication prevention for submissions
