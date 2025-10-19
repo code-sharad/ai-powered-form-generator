@@ -353,7 +353,7 @@ export default function DashboardPage() {
         </main>
 
         {/* AI Prompt Bar - Sticky at bottom */}
-        <AIPromptBar />
+        <AIPromptBar onGenerated={loadForms} />
       </div>
     </ProtectedRoute>
   );

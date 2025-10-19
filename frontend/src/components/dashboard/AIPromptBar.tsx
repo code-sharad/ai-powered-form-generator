@@ -8,7 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { formService } from '@/services/formService';
 import toast from 'react-hot-toast';
 
-export function AIPromptBar() {
+type AIPromptBarProps = {
+  onGenerated?: () => void;
+};
+
+export function AIPromptBar({ onGenerated }: AIPromptBarProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -29,8 +33,8 @@ export function AIPromptBar() {
       if (response.success && response.data) {
         toast.success('Form generated successfully!');
         setPrompt('');
-        // Navigate to forms list or builder
-        router.push('/dashboard');
+        // Notify parent to refresh forms list
+        onGenerated?.();
       } else {
         toast.error('Failed to generate form');
       }

@@ -154,7 +154,8 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
     const forms = (await Form.find({ userId })
-      .select('-fields'))
+      .select('-fields')
+      .sort({ createdAt: -1 }))
 
 
 
