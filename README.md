@@ -3,7 +3,7 @@ AI-Powered Form Generator
 A full-stack application to generate, build, publish, and collect submissions for forms using AI assistance.
 
 ## Demo Video
-![demo](assets/AI%20Form%20Builder.mp4)
+![demo]([assets/AI%20Form%20Builder.mp4](https://github.com/user-attachments/assets/a2a804a1-ef37-4e73-bf58-8cf289511be3))
 
 
 ### Tech Stack
