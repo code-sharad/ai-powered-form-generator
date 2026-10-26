@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import Groq from "groq-sdk";
 import { z } from "zod";
+import { traceable } from "langsmith/traceable";
 
 import { Form } from "@/models/Froms.model";
 import authMiddleware from "@/middlewares/auth.middleware";
@@ -36,8 +37,9 @@ type FormGenerationType = z.infer<typeof formGenerationSchema>;
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const generateForm = async (query: string): Promise<FormGenerationType> => {
-  const prompt = `You are an expert form builder. Generate a structured form based on the following user request.
+const generateForm = traceable(
+  async function generateForm(query: string): Promise<FormGenerationType> {
+    const prompt = `You are an expert form builder. Generate a structured form based on the following user request.
 User Request:\n${query}\n\nRespond with only a valid JSON object that matches this JSON Schema:
 ${JSON.stringify(z.toJSONSchema(formGenerationSchema))}
 
@@ -49,16 +51,18 @@ Guidelines:
 - Ensure field displayNames are user-friendly
 `;
 
-  const completion = await groq.chat.completions.create({
-    model: 'qwen/qwen3.8-27b',
-    messages: [{ role: 'user', content: prompt }],
-    response_format: { type: 'json_object' },
-    temperature: 0.7,
-    max_completion_tokens: 8192,
-  });
+    const completion = await groq.chat.completions.create({
+      model: 'qwen/qwen3.8-27b',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      temperature: 0.7,
+      max_completion_tokens: 8192,
+    });
 
-  return formGenerationSchema.parse(JSON.parse(completion.choices[0]?.message.content ?? ''));
-};
+    return formGenerationSchema.parse(JSON.parse(completion.choices[0]?.message.content ?? ''));
+  },
+  { run_type: "llm" }
+);
 
 
 const router = Router();
