@@ -1,11 +1,8 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
-import { StructuredOutputParser } from "langchain/output_parsers"
-import { z, ZodType } from "zod";
+import Groq from "groq-sdk";
+import { z } from "zod";
 
-
-import { wrapSDK } from "langsmith/wrappers"
 import { Form } from "@/models/Froms.model";
 import authMiddleware from "@/middlewares/auth.middleware";
 import { config } from "@/config";
@@ -37,28 +34,12 @@ const formGenerationSchema = z.object({
 
 type FormGenerationType = z.infer<typeof formGenerationSchema>;
 
-const initializeLLM = () => {
-  return wrapSDK(new ChatGoogleGenerativeAI({
-    model: 'gemini-3.5-flash-lite',
-    apiKey: process.env.GEMINI_API_KEY,
-    temperature: 0.7,
-  }));
-};
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-
-const router = Router();
-
-router.post('/generate', authMiddleware, async (req: Request, res: Response) => {
-  const { query } = req.body;
-  const llm = initializeLLM();
-
-
-  // Initialize structured output parser
-  const parser = StructuredOutputParser.fromZodSchema(formGenerationSchema as any);
-  const formatInstructions = parser.getFormatInstructions();
-  // Construct prompt
+const generateForm = async (query: string): Promise<FormGenerationType> => {
   const prompt = `You are an expert form builder. Generate a structured form based on the following user request.
-User Request:\n${query}\n\n${formatInstructions}
+User Request:\n${query}\n\nRespond with only a valid JSON object that matches this JSON Schema:
+${JSON.stringify(z.toJSONSchema(formGenerationSchema))}
 
 Guidelines:
 - Make fields relevant to the request
@@ -68,21 +49,25 @@ Guidelines:
 - Ensure field displayNames are user-friendly
 `;
 
+  const completion = await groq.chat.completions.create({
+    model: 'qwen/qwen3.8-27b',
+    messages: [{ role: 'user', content: prompt }],
+    response_format: { type: 'json_object' },
+    temperature: 0.7,
+    max_completion_tokens: 8192,
+  });
+
+  return formGenerationSchema.parse(JSON.parse(completion.choices[0]?.message.content ?? ''));
+};
+
+
+const router = Router();
+
+router.post('/generate', authMiddleware, async (req: Request, res: Response) => {
+  const { query } = req.body;
+
   try {
-    // Get response from LLM
-    const response = await llm.call([
-      {
-        role: "user",
-        content: prompt,
-      },
-    ]);
-    // Parse the response
-    const parsedOutput = await parser.parse(response.text) as FormGenerationType;
-
-
-    if (!parsedOutput) {
-      return res.status(404).json({ error: 'Failed to parse AI response' })
-    }
+    const parsedOutput = await generateForm(query);
 
     const slug = await generateSlug(parsedOutput.formName);
 

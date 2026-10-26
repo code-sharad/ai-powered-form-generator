@@ -9,6 +9,7 @@
     "start": "bun run dist/index.js"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261026.1",
     "@types/bcrypt": "^6.0.0",
     "@types/bun": "latest",
     "@types/cors": "^2.8.19",
@@ -23,16 +24,14 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@langchain/google-genai": "^0.2.18",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "groq-sdk": "^1.6.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
-    "langchain": "^0.3.36",
-    "langsmith": "^0.3.74",
     "mongoose": "^8.19.1",
     "nanoid": "^5.1.6",
     "zod": "^4.1.12"

@@ -61,6 +61,7 @@ Backend `backend/.env`
 PORT=8080
 JWT_SECRET=<strong-secret>
 MONGODB_URI=<your-mongodb-connection-string>
+GROQ_API_KEY=<your-groq-api-key>
 
 # Cloudinary (if server-side signing is used)
 CLOUDINARY_CLOUD_NAME=<your-cloud-name>
