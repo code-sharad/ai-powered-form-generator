@@ -39,7 +39,7 @@ type FormGenerationType = z.infer<typeof formGenerationSchema>;
 
 const initializeLLM = () => {
   return wrapSDK(new ChatGoogleGenerativeAI({
-    model: 'gemini-3.8-flash',
+    model: 'gemini-3.5-flash-lite',
     apiKey: process.env.GEMINI_API_KEY,
     temperature: 0.7,
   }));
