@@ -70,6 +70,7 @@ export interface Form {
   category: 'appointment' | 'registration' | 'order' | 'application' | 'feedback' | 'survey' | 'custom';
   fields: FormField[];
   generatedPrompt?: string;
+  presentation?: 'classic' | 'conversational';
   submissionStats?: {
     count: number;
     lastSubmittedAt?: string;

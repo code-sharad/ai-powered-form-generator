@@ -51,16 +51,17 @@ export const formService = {
   },
 
   // Get submission analytics
-  async getSubmissionAnalytics(days: number = 30): Promise<{
+  async getSubmissionAnalytics(period: number | { startDate: string; endDate: string; groupBy: 'day' | 'month' } = 30): Promise<{
     submissions: Array<{ date: string; count: number; label: string }>;
     totalSubmissions: number;
     periodDays: number;
   }> {
+    const params = typeof period === 'number' ? { days: period } : period;
     const response = await api.get<ApiResponse<{
       submissions: Array<{ date: string; count: number; label: string }>;
       totalSubmissions: number;
       periodDays: number;
-    }>>(`/submission/analytics/submissions-over-time?days=${days}`);
-    return response.data.data || { submissions: [], totalSubmissions: 0, periodDays: days };
+    }>>('/submission/analytics/submissions-over-time', { params });
+    return response.data.data || { submissions: [], totalSubmissions: 0, periodDays: typeof period === 'number' ? period : 0 };
   },
 };

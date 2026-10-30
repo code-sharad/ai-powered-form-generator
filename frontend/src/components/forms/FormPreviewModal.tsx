@@ -34,7 +34,7 @@ export function FormPreviewModal({ form, isOpen, onClose }: FormPreviewModalProp
             This is how your form will appear to users
           </DialogDescription>
         </DialogHeader>
-        <div className="mt-4">
+        <div className="pf mt-4">
           <FormRenderer form={form} onSubmit={handlePreviewSubmit} />
         </div>
       </DialogContent>

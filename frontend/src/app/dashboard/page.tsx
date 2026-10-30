@@ -1,360 +1,129 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Brand } from '@/components/layout/Brand';
 import { useAuth } from '@/hooks/useAuth';
 import { formService } from '@/services/formService';
 import { AIPromptBar } from '@/components/dashboard/AIPromptBar';
-import {
-  Copy,
-  MoreVertical,
-  Loader2,
-  FileText,
-  TrendingUp,
-  Plus,
-  ExternalLink,
-  Calendar,
-  Activity
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { ResponseAnalytics } from '@/components/dashboard/ResponseAnalytics';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { Copy, ExternalLink, FileText, Loader2, LogOut, MoreHorizontal, Pencil, Plus, Radio, Search, Sparkles, Trash2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import toast from 'react-hot-toast';
 import type { Form } from '@/types';
+import './dashboard.css';
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const { logout } = useAuth();
+function FormActions({ form, pending, onCopy, onPublish, onDelete }: {
+  form: Form;
+  pending: boolean;
+  onCopy: (slug: string) => void;
+  onPublish: (id: string) => void;
+  onDelete: (form: Form) => void;
+}) {
+  return <DropdownMenu modal={false}>
+    <DropdownMenuTrigger asChild><button type="button" className="icon-button" disabled={pending} aria-label={`Actions for ${form.formName}`}>{pending ? <Loader2 size={16} className="animate-spin" /> : <MoreHorizontal size={17} />}</button></DropdownMenuTrigger>
+    <DropdownMenuContent align="end">
+      <DropdownMenuItem asChild><Link href={`/dashboard/forms/${form._id}`}><Pencil size={14} /> Edit form</Link></DropdownMenuItem>
+      {form.sharing?.isPublic ? <>
+        <DropdownMenuItem onClick={() => onCopy(form.slug)}><Copy size={14} /> Copy link</DropdownMenuItem>
+        <DropdownMenuItem asChild><Link href={`/forms/${form.slug}`} target="_blank" rel="noopener noreferrer"><ExternalLink size={14} /> Open public form</Link></DropdownMenuItem>
+      </> : <DropdownMenuItem onClick={() => onPublish(form._id)}><Radio size={14} /> Publish form</DropdownMenuItem>}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(form)}><Trash2 size={14} /> Delete form</DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>;
+}
+
+function DashboardWorkspace() {
+  const { user, logout } = useAuth();
   const [forms, setForms] = useState<Form[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [submissionData, setSubmissionData] = useState<Array<{ date: string; count: number; label: string }>>([]);
-  const [totalSubmissions, setTotalSubmissions] = useState(0);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [analyticsRefresh, setAnalyticsRefresh] = useState(0);
 
-  useEffect(() => {
-    loadForms();
-    loadSubmissionAnalytics();
+  const loadForms = useCallback(async () => {
+    setError('');
+    try { setForms(await formService.getUserForms()); }
+    catch { setError('Your forms couldn’t be loaded. Check your connection and try again.'); }
+    finally { setIsLoading(false); }
   }, []);
 
-  const loadForms = async () => {
+  useEffect(() => { loadForms(); }, [loadForms]);
+
+  function focusPrompt() { document.getElementById('form-prompt')?.focus({ preventScroll: true }); }
+
+  useEffect(() => {
+    function syncHash() { if (window.location.hash === '#create-form') document.getElementById('form-prompt')?.focus({ preventScroll: true }); }
+    syncHash();
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, []);
+
+  async function copyLink(slug: string) {
+    try { await navigator.clipboard.writeText(`${window.location.origin}/forms/${slug}`); toast.success('Form link copied'); }
+    catch { toast.error('Couldn’t copy the link. Try opening the public form instead.'); }
+  }
+
+  async function deleteForm(form: Form) {
+    if (!confirm(`Delete “${form.formName}”? This can’t be undone.`)) return;
+    setPendingId(form._id);
     try {
-      const data = await formService.getUserForms();
-      setForms(data);
-    } catch (error) {
-      console.error('Failed to load forms:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      await formService.deleteForm(form._id);
+      toast.success('Form deleted');
+      await loadForms();
+      setAnalyticsRefresh(value => value + 1);
+    } catch { toast.error('Form couldn’t be deleted. Please try again.'); }
+    finally { setPendingId(null); }
+  }
 
-  const loadSubmissionAnalytics = async () => {
-    try {
-      const analytics = await formService.getSubmissionAnalytics(30);
-      setSubmissionData(analytics.submissions);
-      setTotalSubmissions(analytics.totalSubmissions);
-    } catch (error) {
-      console.error('Failed to load submission analytics:', error);
-    }
-  };
+  async function publishForm(id: string) {
+    setPendingId(id);
+    try { await formService.publishForm(id); toast.success('Form published'); await loadForms(); }
+    catch { toast.error('Form couldn’t be published. Please try again.'); }
+    finally { setPendingId(null); }
+  }
 
-  const handleCopyUrl = (slug: string) => {
-    const url = `${window.location.origin}/forms/${slug}`;
-    navigator.clipboard.writeText(url);
-    toast.success('URL copied to clipboard!');
-  };
+  const visibleForms = forms
+    .filter(form => form.formName.toLowerCase().includes(search.trim().toLowerCase()) && (filter === 'all' || (filter === 'published' ? form.sharing?.isPublic : !form.sharing?.isPublic)))
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  const publishedCount = forms.filter(form => form.sharing?.isPublic).length;
 
-  const handleEdit = (formId: string) => {
-    router.push(`/dashboard/forms/${formId}`);
-  };
+  return <div className="simple-dashboard">
+    <a href="#workspace" className="skip-link">Skip to workspace</a>
+    <main id="workspace" className="simple-dashboard-main">
+      <h1 className="sr-only">Form dashboard</h1>
+      <div className="dashboard-utilities"><Brand /><div className="dashboard-utility-actions"><ThemeToggle /><button type="button" className="icon-button" aria-label="Log out" title="Log out" onClick={logout}><LogOut size={16} /></button></div></div>
 
-  const handleDelete = async (formId: string, formName: string) => {
-    if (!confirm(`Are you sure you want to delete "${formName}"?`)) {
-      return;
-    }
+      <ResponseAnalytics formCount={isLoading || error ? null : forms.length} publishedCount={isLoading || error ? null : publishedCount} refreshKey={analyticsRefresh} firstYear={user?.createdAt ? new Date(user.createdAt).getUTCFullYear() : undefined} />
 
-    try {
-      await formService.deleteForm(formId);
-      toast.success('Form deleted successfully');
-      loadForms();
-    } catch (error) {
-      console.error('Failed to delete form:', error);
-      toast.error('Failed to delete form');
-    }
-  };
+      {error && <div role="alert" className="workspace-alert"><span>{error}</span><button type="button" onClick={loadForms}>Try again</button></div>}
 
-  const handlePublish = async (formId: string) => {
-    try {
-      await formService.publishForm(formId);
-      toast.success('Form published successfully!');
-      loadForms();
-    } catch (error) {
-      console.error('Failed to publish form:', error);
-      toast.error('Failed to publish form');
-    }
-  };
+      <section id="your-forms" aria-label="Your forms">
+        <div className="simple-form-tools"><div className="simple-search"><Search size={14} /><label htmlFor="search-forms" className="sr-only">Search forms</label><input id="search-forms" type="search" placeholder="Search forms…" value={search} onChange={event => setSearch(event.target.value)} className="search-input" /></div><div className="simple-form-filters"><Select value={filter} onValueChange={setFilter}><SelectTrigger id="filter-forms" className="filter-select" aria-label="Filter by status"><SelectValue /></SelectTrigger><SelectContent className="dashboard-select-menu" position="popper" align="end" sideOffset={5}><SelectItem value="all">All forms</SelectItem><SelectItem value="published">Published</SelectItem><SelectItem value="draft">Drafts</SelectItem></SelectContent></Select><button type="button" className="icon-button" aria-label="Create a new form" title="Create a new form" onClick={focusPrompt}><Plus size={17} /></button></div></div>
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
+        {isLoading ? <div className="empty-state" role="status"><Loader2 size={22} className="animate-spin" /><p>Loading your forms…</p></div> : error ? null : visibleForms.length === 0 ? <div className="empty-state"><FileText size={27} /><h2>{forms.length === 0 ? 'Create your first form.' : 'No matching forms.'}</h2><p>{forms.length === 0 ? 'Describe what you need in the prompt below.' : 'Try another name or choose a different status.'}</p>{forms.length === 0 ? <button type="button" className="text-link" onClick={focusPrompt}>Start with a prompt <Sparkles size={14} /></button> : <button type="button" className="text-link" onClick={() => { setSearch(''); setFilter('all'); }}>Clear filters</button>}</div> : <table className="simple-form-table">
+          <caption className="sr-only">Your forms, sorted by most recently updated</caption>
+          <thead><tr><th scope="col">Name</th><th scope="col">Status</th><th scope="col">Responses</th><th scope="col">Updated</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
+          <tbody>{visibleForms.map(form => <tr key={form._id}>
+            <td><Link href={`/dashboard/forms/${form._id}`} className="simple-form-name"><span className="simple-form-icon"><FileText size={17} /></span><span>{form.formName}<span className={`simple-mobile-status ${form.sharing?.isPublic ? 'is-published' : ''}`}>{form.sharing?.isPublic ? 'Published' : 'Draft'}</span></span></Link></td>
+            <td><span className={`simple-status ${form.sharing?.isPublic ? 'is-published' : ''}`}><i />{form.sharing?.isPublic ? 'Published' : 'Draft'}</span></td>
+            <td>{form.submissionStats?.count ?? 0}</td>
+            <td>{new Date(form.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+            <td><FormActions form={form} pending={pendingId === form._id} onCopy={copyLink} onPublish={publishForm} onDelete={deleteForm} /></td>
+          </tr>)}</tbody>
+        </table>}
+      </section>
+    </main>
+    <div className="dashboard-prompt-dock"><AIPromptBar compact onGenerated={loadForms} /></div>
+  </div>;
+}
 
-  // Use submission data from API
-  const chartData = submissionData;
-
-  const chartConfig = {
-    count: {
-      label: 'Submissions',
-      color: 'hsl(var(--chart-1))',
-    },
-  } satisfies ChartConfig;
-
-  return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-[#000000] text-white pb-[200px]">
-        {/* Header */}
-        <header className="sticky top-0 z-50 border-b border-[#333333] bg-[#000000]/80 backdrop-blur-xl">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <h1 className="text-sm font-semibold tracking-tight text-white">AI Form Builder</h1>
-
-            </div>
-            <div className="flex items-center gap-3">
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={logout}
-                className="h-8 px-3 text-[13px] text-[#a1a1a1] hover:text-white hover:bg-[#1a1a1a]"
-              >
-                Logout
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-6 py-12">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-32">
-              <Loader2 className="h-6 w-6 animate-spin text-[#a1a1a1]" />
-            </div>
-          ) : forms.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-32">
-              <div className="mb-6 rounded-full bg-[#1a1a1a] p-6">
-                <FileText className="h-8 w-8 text-[#a1a1a1]" />
-              </div>
-              <h2 className="text-xl font-semibold mb-2 text-white">No forms yet</h2>
-              <p className="text-[13px] text-[#a1a1a1] text-center max-w-sm mb-8">
-                Create your first AI-powered form using the prompt below or click the button above.
-              </p>
-
-            </div>
-          ) : (
-            <div className="space-y-8">
-
-
-              {/* Activity Chart */}
-              <Card className="bg-[#0a0a0a] border border-[#333333] rounded-lg overflow-hidden">
-                <div className="p-6 border-b border-[#333333]">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-base font-semibold mb-1 text-white">
-                        Submissions Activity
-                      </h3>
-                      <p className="text-[13px] text-[#a1a1a1]">
-                        Daily submissions over the last 30 days
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#1a1a1a] border border-[#333333]">
-                      <TrendingUp className="h-3.5 w-3.5 text-green-400" />
-                      <span className="text-[13px] font-medium text-white">{totalSubmissions} submissions</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <ChartContainer config={chartConfig} className="h-[240px] w-full">
-                    <AreaChart
-                      data={chartData}
-                      margin={{
-                        top: 10,
-                        right: 10,
-                        left: -20,
-                        bottom: 0,
-                      }}
-                    >
-                      <defs>
-                        <linearGradient id="fillCount" x1="0" y1="0" x2="0" y2="1">
-                          <stop
-                            offset="5%"
-                            stopColor="hsl(217, 91%, 60%)"
-                            stopOpacity={0.3}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor="hsl(217, 91%, 60%)"
-                            stopOpacity={0}
-                          />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="#333333"
-                        opacity={0.3}
-                      />
-                      <XAxis
-                        dataKey="label"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={12}
-                        minTickGap={32}
-                        tick={{ fill: '#a1a1a1', fontSize: 12 }}
-                      />
-                      <YAxis
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={8}
-                        tick={{ fill: '#a1a1a1', fontSize: 12 }}
-                      />
-                      <ChartTooltip
-                        cursor={{ stroke: '#333333', strokeWidth: 1 }}
-                        content={<ChartTooltipContent indicator="dot" />}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="count"
-                        stroke="hsl(217, 91%, 60%)"
-                        strokeWidth={2}
-                        fill="url(#fillCount)"
-                      />
-                    </AreaChart>
-                  </ChartContainer>
-                </div>
-              </Card>
-
-              {/* Forms List */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">Your Forms</h3>
-                  <span className="text-[13px] text-[#a1a1a1]">
-                    {forms.length} {forms.length === 1 ? 'form' : 'forms'}
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  {forms.map((form) => (
-                    <Card
-                      key={form._id}
-                      className="bg-[#0a0a0a] border border-[#333333] rounded-lg hover:border-[#444444] transition-all cursor-pointer group overflow-hidden"
-                      onClick={() => router.push(`/dashboard/forms/${form._id}`)}
-                    >
-                      <div className="p-5">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-3">
-                              <h3 className="text-[15px] font-semibold text-white group-hover:text-white transition-colors truncate">
-                                {form.formName}
-                              </h3>
-                              {form.sharing?.isPublic && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500/10 border border-green-500/20 text-green-400 text-[11px] font-medium shrink-0">
-                                  <ExternalLink className="h-3 w-3" />
-                                  Published
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-6 text-[13px] text-[#a1a1a1]">
-                              <div className="flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" />
-                                <span>{formatDate(form.createdAt)}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <Activity className="h-3.5 w-3.5" />
-                                <span>{form.submissionStats?.count || 0} submissions</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                            {form.sharing?.isPublic && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleCopyUrl(form.slug)}
-                                className="h-8 px-3 text-[13px] text-[#a1a1a1] hover:text-white hover:bg-[#1a1a1a] border border-[#333333]"
-                              >
-                                <Copy className="h-3.5 w-3.5 mr-1.5" />
-                                Copy Link
-                              </Button>
-                            )}
-
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-[#a1a1a1] hover:text-white hover:bg-[#1a1a1a] border border-[#333333]"
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="bg-[#0a0a0a] border-[#333333]  text-white min-w-[160px]"
-                              >
-                                <DropdownMenuItem
-                                  onClick={() => handleEdit(form._id)}
-                                  className="hover:bg-[#1a1a1a] focus:bg-[#1a1a1a] focus:text-white cursor-pointer text-[13px]"
-                                >
-                                  Edit Form
-                                </DropdownMenuItem>
-                                {!form.sharing?.isPublic && (
-                                  <DropdownMenuItem
-                                    onClick={() => handlePublish(form._id)}
-                                    className="hover:bg-[#1a1a1a] focus:bg-[#1a1a1a] focus:text-white cursor-pointer text-[13px]"
-                                  >
-                                    Publish Form
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator className="bg-[#333333]" />
-                                <DropdownMenuItem
-                                  onClick={() => handleDelete(form._id, form.formName)}
-                                  className="hover:bg-[#1a1a1a] focus:bg-[#1a1a1a] cursor-pointer text-red-400 focus:text-red-400 text-[13px]"
-                                >
-                                  Delete Form
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </main>
-
-        {/* AI Prompt Bar - Sticky at bottom */}
-        <AIPromptBar onGenerated={loadForms} />
-      </div>
-    </ProtectedRoute>
-  );
+export default function DashboardPage() {
+  return <ProtectedRoute><DashboardWorkspace /></ProtectedRoute>;
 }

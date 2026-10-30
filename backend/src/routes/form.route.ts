@@ -112,7 +112,7 @@ router.post('/generate', authMiddleware, async (req: Request, res: Response) => 
 router.post('/:formId', authMiddleware, async (req: Request, res: Response) => {
   try {
 
-    const { formName, description, fields } = req.body;
+    const { formName, description, fields, presentation } = req.body;
 
     const form = await Form.findOne({ _id: req.params.formId });
     if (!form || form.userId.toString() != req.userId) {
@@ -122,6 +122,12 @@ router.post('/:formId', authMiddleware, async (req: Request, res: Response) => {
     form.formName = formName || form.formName;
     form.description = description || form.description;
     form.fields = fields || form.fields;
+    if (presentation !== undefined) {
+      if (!['classic', 'conversational'].includes(presentation)) {
+        return res.status(400).json({ error: "presentation must be 'classic' or 'conversational'" });
+      }
+      form.presentation = presentation;
+    }
     form.updatedAt = new Date();
 
     await form.save();

@@ -1,24 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Send, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { formService } from '@/services/formService';
 import toast from 'react-hot-toast';
 
 type AIPromptBarProps = {
   onGenerated?: () => void;
+  compact?: boolean;
 };
 
-export function AIPromptBar({ onGenerated }: AIPromptBarProps) {
-  const router = useRouter();
+export function AIPromptBar({ onGenerated, compact = false }: AIPromptBarProps) {
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isGenerating) return;
 
     if (!prompt.trim()) {
       toast.error('Please describe the form you want to create');
@@ -48,26 +46,29 @@ export function AIPromptBar({ onGenerated }: AIPromptBarProps) {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
       handleSubmit(e);
     }
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#000000] border-t border-[#333333] z-50">
-      <div className="max-w-4xl mx-auto p-6">
-        <form onSubmit={handleSubmit} className="relative">
-          <Textarea
+    <section className={`prompt-panel ${compact ? 'prompt-panel-compact' : ''}`} id="create-form" aria-labelledby="prompt-title">
+      <h2 className={compact ? 'sr-only' : 'prompt-panel-heading'} id="prompt-title"><Sparkles size={19} /> What would you like to create?</h2>
+        <form onSubmit={handleSubmit}>
+          <label htmlFor="form-prompt" className="sr-only">Describe your form</label>
+          <textarea
+            id="form-prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe the form you want to create..."
-            className="w-full bg-[#0a0a0a] border-[#333333] text-white placeholder:text-[#666666] focus:border-[#444444] focus-visible:ring-0 min-h-[120px] max-h-[200px] resize-none rounded-xl pr-24 py-4 px-4 text-[14px] leading-relaxed"
+            placeholder={compact ? 'Describe the form you want to create…' : 'A registration form for a design workshop, with name, email, and experience level…'}
+            rows={compact ? 2 : 3}
             disabled={isGenerating}
           />
-          <Button
+          <div className="prompt-panel-footer">{!compact && <span>Describe your idea. AI takes care of the first draft.</span>}<button
             type="submit"
             disabled={isGenerating || !prompt.trim()}
-            className="absolute right-3 bottom-3 bg-white text-black hover:bg-[#fafafa] h-10 px-5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-[13px] font-medium transition-all"
+            className="action-button small"
           >
             {isGenerating ? (
               <>
@@ -76,13 +77,16 @@ export function AIPromptBar({ onGenerated }: AIPromptBarProps) {
               </>
             ) : (
               <>
-                <Send className="mr-2 h-4 w-4" />
-                Generate
+                Generate form <ArrowRight size={15} />
               </>
             )}
-          </Button>
+          </button></div>
         </form>
-      </div>
-    </div>
+        {!compact && <div className="prompt-examples" role="group" aria-label="Suggested prompts">{[
+          ['Event registration', 'Create an event registration form with name, email, and dietary preferences.'],
+          ['Customer feedback', 'Create a customer feedback form with name, email, a satisfaction rating, and comments.'],
+          ['Job application', 'Create a job application form with full name, email, experience, and a resume upload.'],
+        ].map(([label, value]) => <button key={label} type="button" disabled={isGenerating} onClick={() => { setPrompt(value); document.getElementById('form-prompt')?.focus(); }}>{label}</button>)}</div>}
+    </section>
   );
 }

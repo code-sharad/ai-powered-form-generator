@@ -38,6 +38,11 @@ const formSchema = new mongoose.Schema({
   category: String,
   fields: [fieldSchema],
   generatedPrompt: String,
+  presentation: {
+    type: String,
+    enum: ['classic', 'conversational'],
+    default: 'classic',
+  },
   // settings: {
   //   allowMultipleSubmissions: { type: Boolean, default: true },
   //   showProgressBar: { type: Boolean, default: false },

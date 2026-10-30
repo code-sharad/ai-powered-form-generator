@@ -1,4 +1,4 @@
-AI-Powered Form Generator
+Formora — AI-Powered Form Generator
 
 A full-stack application to generate, build, publish, and collect submissions for forms using AI assistance.
 

@@ -2,13 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { Form } from '@/types';
 import { formService } from '@/services/formService';
 import { submissionService } from '@/services/submissionService';
 import { FormRenderer } from '@/components/forms/FormRenderer';
-import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function PublicFormPage() {
@@ -26,10 +25,8 @@ export default function PublicFormPage() {
       setIsLoading(true);
       setError(null);
 
-      // Try to get public form by slug
       const data = await formService.getPublicForm(slug);
 
-      // Check if form is published
       if (!data.sharing?.isPublic) {
         setError('This form is not publicly available');
         return;
@@ -52,14 +49,12 @@ export default function PublicFormPage() {
     if (!form) return;
 
     try {
-      // Extract uploaded files from responses
       const uploadedImages: Array<{
         fieldId: string;
         cloudinaryPublicId: string;
         url: string;
       }> = [];
 
-      // Find all file upload fields and extract their data
       Object.entries(responses).forEach(([fieldId, value]) => {
         if (value && typeof value === 'object' && 'cloudinaryPublicId' in value) {
           const fileData = value as {
@@ -80,122 +75,72 @@ export default function PublicFormPage() {
         uploadedImages: uploadedImages.length > 0 ? uploadedImages : undefined,
       });
 
-      toast.success('Form submitted successfully!');
       setIsSubmitted(true);
     } catch (err) {
       console.error('Submission error:', err);
       toast.error('Failed to submit form. Please try again.');
+      throw err;
     }
   };
 
-  // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen  dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
-          <CardContent className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-3 text-lg">Loading form...</span>
-          </CardContent>
-        </Card>
+      <div className="pf pf-center" role="status" aria-label="Loading form">
+        <div>
+          <span className="pf-spinner" aria-hidden="true" />
+          <p className="pf-loading-label">Loading form…</p>
+        </div>
       </div>
     );
   }
 
-  // Error state
   if (error || !form) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
-          <CardHeader>
-            <div className="flex items-center justify-center mb-4">
-              <AlertCircle className="h-12 w-12 text-red-500" />
-            </div>
-            <CardTitle className="text-center text-2xl">Form Not Found</CardTitle>
-            <CardDescription className="text-center">
-              {error || 'The form you are looking for does not exist or is no longer available.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button onClick={() => router.push('/')} variant="outline">
-              Go Home
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="pf pf-center">
+        <div className="pf-enter">
+          <span className="pf-state-icon error"><AlertCircle size={26} /></span>
+          <h1>This form isn’t available.</h1>
+          <p>{error || 'The form you are looking for does not exist or is no longer available.'}</p>
+          <div className="pf-state-actions">
+            <button type="button" className="pf-button pf-button-quiet" onClick={() => router.push('/')}>
+              Back to home
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Success state
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
-          <CardHeader>
-            <div className="flex items-center justify-center mb-4">
-              <CheckCircle className="h-16 w-16 text-green-500" />
-            </div>
-            <CardTitle className="text-center text-3xl">Thank You!</CardTitle>
-            <CardDescription className="text-center text-lg mt-2">
-              Your response has been successfully submitted.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center gap-4">
-            <p className="text-center text-muted-foreground">
-              We appreciate you taking the time to fill out this form.
-            </p>
-            <div className="flex gap-3">
-              <Button onClick={() => setIsSubmitted(false)} variant="outline">
-                Submit Another Response
-              </Button>
-              <Button onClick={() => router.push('/')}>
-                Go Home
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="pf pf-center">
+        <div className="pf-enter pf-success">
+          <span className="pf-confetti" aria-hidden="true">{Array.from({ length: 12 }, (_, i) => <i key={i} />)}</span>
+          <span className="pf-success-check">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4.5 12.5l5 5 10-11" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <h1>Response submitted.</h1>
+          <p>Thank you — your answers have been recorded.</p>
+          <div className="pf-state-actions">
+            <button type="button" className="pf-button" onClick={() => setIsSubmitted(false)}>
+              Submit another response
+            </button>
+            <button type="button" className="pf-button pf-button-quiet" onClick={() => router.push('/')}>
+              Back to home
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Form submission page
   return (
-    <div className="min-h-screen  dark:from-gray-900 dark:to-gray-800 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <Card className="border-none shadow-none">
-          <CardHeader className="space-y-3 pb-8">
-            {/* <div className="space-y-2">
-              <CardTitle className="text-3xl font-bold text-center">
-                {form.formName}
-              </CardTitle>
-              {form.description && (
-                <CardDescription className="text-center text-base">
-                  {form.description}
-                </CardDescription>
-              )}
-            </div> */}
-
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-gray-300 dark:to-gray-700" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                {form.fields.length} {form.fields.length === 1 ? 'Question' : 'Questions'}
-              </span>
-              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gray-300 dark:to-gray-700" />
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            <FormRenderer
-              form={form}
-              onSubmit={handleSubmit}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Footer */}
-        <div className="text-center mt-6 text-sm text-muted-foreground">
-          <p>Powered by AI Form Builder</p>
-        </div>
+    <div className="pf pf-page">
+      <div className="pf-column pf-enter">
+        <FormRenderer form={form} onSubmit={handleSubmit} />
+        <p className="pf-footer">Made with <Link href="/">Formora</Link></p>
       </div>
     </div>
   );

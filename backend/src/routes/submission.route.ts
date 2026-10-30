@@ -2,6 +2,7 @@ import authMiddleware from "@/middlewares/auth.middleware";
 import { Form } from "@/models/Froms.model";
 import { Submission } from "@/models/Submissin.model";
 import { Router, type Request, type Response } from "express";
+import { buildAnalyticsSeries, parseAnalyticsRange } from '@/utils/analyticsRange';
 
 const router = Router();
 
@@ -129,62 +130,29 @@ router.get('/:submissionId', authMiddleware, async (req: Request, res: Response)
 // Get submission analytics (all user's forms)
 router.get('/analytics/submissions-over-time', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { days = 30 } = req.query;
-    const daysNum = parseInt(days as string);
-
-    // Get all forms belonging to the user
-    const userForms = await Form.find({ userId: req.userId });
+    const range = parseAnalyticsRange(req.query);
+    const userForms = await Form.find({ userId: req.userId }).select('_id');
     const formIds = userForms.map(form => form._id);
-
-    // Get submissions from the last X days for user's forms
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysNum);
-
-    const submissions = await Submission.find({
-      formId: { $in: formIds },
-      submittedAt: { $gte: startDate }
-    }).sort({ submittedAt: 1 });
-
-    // Group submissions by date
-    const submissionsByDate: { [key: string]: number } = {};
-
-    // Initialize all dates with 0
-    for (let i = 0; i < daysNum; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - (daysNum - 1 - i));
-      const dateKey = date.toISOString().split('T')[0];
-      if (dateKey) {
-        submissionsByDate[dateKey] = 0;
-      }
-    }
-
-    // Count submissions per date
-    submissions.forEach(submission => {
-      const submittedAt = submission.submittedAt;
-      if (submittedAt) {
-        const dateKey = new Date(submittedAt).toISOString().split('T')[0];
-        if (dateKey && dateKey in submissionsByDate) {
-          submissionsByDate[dateKey] = submissionsByDate[dateKey]! + 1;
-        }
-      }
-    });
-
-    // Convert to array format
-    const data = Object.entries(submissionsByDate).map(([date, count]) => ({
-      date,
-      count,
-      label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    }));
+    const buckets = await Submission.aggregate<{ _id: string; count: number }>([
+      { $match: { formId: { $in: formIds }, submittedAt: { $gte: range.start, $lt: range.endExclusive } } },
+      { $group: { _id: { $dateToString: { format: range.groupBy === 'month' ? '%Y-%m' : '%Y-%m-%d', date: '$submittedAt', timezone: 'UTC' } }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]);
+    const data = buildAnalyticsSeries(range, buckets);
 
     return res.json({
       success: true,
       data: {
         submissions: data,
-        totalSubmissions: submissions.length,
-        periodDays: daysNum
+        totalSubmissions: data.reduce((total, item) => total + item.count, 0),
+        periodDays: range.periodDays,
+        startDate: range.start.toISOString().slice(0, 10),
+        endDate: new Date(range.endExclusive.getTime() - 86_400_000).toISOString().slice(0, 10),
+        groupBy: range.groupBy
       }
     });
   } catch (error) {
+    if (error instanceof RangeError) return res.status(400).json({ success: false, error: error.message });
     const err = error as Error;
     return res.status(500).json({
       success: false,
@@ -195,4 +163,3 @@ router.get('/analytics/submissions-over-time', authMiddleware, async (req: Reque
 })
 
 export default router;
-

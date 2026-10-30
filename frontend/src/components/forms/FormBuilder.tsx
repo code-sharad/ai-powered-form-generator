@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Form, FormField } from '@/types';
 import { SortableFieldItem } from './SortableFieldItem';
 import { AddFieldDialog } from './AddFieldDialog';
@@ -25,6 +25,7 @@ export function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps
   const [description, setDescription] = useState(initialForm.description || '');
   const [fields, setFields] = useState<FormField[]>(initialForm.fields);
   const [isSaving, setIsSaving] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -85,10 +86,10 @@ export function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Form Settings */}
-      <Card className="bg-[#0a0a0a] border-[#333333] rounded-lg">
+      <Card className="bg-card border-border rounded-xl shadow-none">
         <CardContent className="space-y-6 p-6">
           <div className="space-y-3">
-            <Label htmlFor="formName" className="text-[13px] font-medium text-white">
+            <Label htmlFor="formName" className="text-[13px] font-medium text-foreground">
               Form Name
             </Label>
             <Input
@@ -96,12 +97,12 @@ export function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               placeholder="Enter form name"
-              className="h-10 bg-[#1a1a1a] border-[#333333] text-white placeholder:text-[#666666] focus:border-[#444444] focus:ring-0 text-[13px]"
+              className="h-11 bg-background border-input text-foreground placeholder:text-muted-foreground text-[13px]"
             />
           </div>
           <div className="space-y-3">
-            <Label htmlFor="description" className="text-[13px] font-medium text-white">
-              Description <span className="text-[#666666] font-normal">(Optional)</span>
+            <Label htmlFor="description" className="text-[13px] font-medium text-foreground">
+              Description <span className="text-muted-foreground font-normal">(Optional)</span>
             </Label>
             <Textarea
               id="description"
@@ -109,22 +110,22 @@ export function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the purpose of this form"
               rows={3}
-              className="bg-[#1a1a1a] border-[#333333] text-white placeholder:text-[#666666] focus:border-[#444444] focus:ring-0 text-[13px] resize-none"
+              className="bg-background border-input text-foreground placeholder:text-muted-foreground text-[13px] resize-y"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Fields Editor */}
-      <Card className="bg-[#0a0a0a] border-[#333333] rounded-lg">
-        <CardHeader className="border-b border-[#333333] p-6">
-          <div className="flex justify-between items-start">
+      <Card className="bg-card border-border rounded-xl shadow-none">
+        <CardHeader className="border-b border-border p-5 sm:p-6">
+          <div className="flex flex-wrap gap-4 justify-between items-start">
             <div>
-              <CardTitle className="text-base font-semibold text-white mb-1">
+              <CardTitle className="text-base font-semibold text-foreground mb-1">
                 Form Fields
               </CardTitle>
-              <CardDescription className="text-[13px] text-[#a1a1a1]">
-                Drag to reorder, click to edit
+              <CardDescription className="text-[12px] text-muted-foreground">
+                Drag to reorder, or focus the handle and use Space and arrow keys.
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -132,7 +133,7 @@ export function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps
               <Button
                 variant="ghost"
                 onClick={onPreview}
-                className="h-8 px-3 text-[13px] text-[#a1a1a1] hover:text-white hover:bg-[#1a1a1a] border border-[#333333]"
+                className="h-9 px-3 text-[12px] text-muted-foreground hover:text-primary hover:bg-accent border border-border"
               >
                 <Eye className="mr-1.5 h-3.5 w-3.5" />
                 Preview
@@ -140,27 +141,29 @@ export function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-3 sm:p-6">
           {fields.length === 0 ? (
             <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#1a1a1a] border border-[#333333] mb-4">
-                <Save className="h-5 w-5 text-[#666666]" />
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent border border-border mb-4">
+                <Save className="h-5 w-5 text-primary" />
               </div>
-              <p className="text-[13px] text-[#a1a1a1]">
+              <p className="text-[13px] text-muted-foreground">
                 No fields yet. Use AI to generate fields or add them manually.
               </p>
             </div>
           ) : (
-            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext
                 items={fields.map((f) => f.fieldId)}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-3">
-                  {fields.map((field) => (
+                  {fields.map((field, index) => (
                     <SortableFieldItem
                       key={field.fieldId}
                       field={field}
+                      index={index}
+                      total={fields.length}
                       onDelete={handleDeleteField}
                       onUpdate={handleUpdateField}
                     />
@@ -177,7 +180,7 @@ export function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps
         <Button
           variant="ghost"
           onClick={onPreview}
-          className="h-9 px-4 text-[13px] text-[#a1a1a1] hover:text-white hover:bg-[#1a1a1a] border border-[#333333]"
+          className="h-10 px-4 text-[13px] text-muted-foreground hover:text-primary hover:bg-accent border border-border"
         >
           <Eye className="mr-1.5 h-4 w-4" />
           Preview Form
@@ -185,7 +188,7 @@ export function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps
         <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="h-9 px-4 text-[13px] bg-white text-black hover:bg-[#fafafa] font-medium disabled:opacity-50"
+          className="h-10 px-4 text-[13px] bg-primary text-primary-foreground hover:bg-primary/90 font-medium disabled:opacity-50"
         >
           <Save className="mr-1.5 h-4 w-4" />
           {isSaving ? 'Saving...' : 'Save Changes'}

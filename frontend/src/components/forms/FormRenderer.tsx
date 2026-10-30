@@ -1,137 +1,81 @@
 'use client';
 
-import { useState } from 'react';
 import { Form, FormField } from '@/types';
 import { DynamicField } from './DynamicField';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import toast from 'react-hot-toast';
+import { ConversationalForm } from './ConversationalForm';
+import { useFormResponses } from './useFormResponses';
+import { ArrowRight, Loader2 } from 'lucide-react';
 
 interface FormRendererProps {
   form: Form;
   onSubmit: (responses: Record<string, unknown>) => Promise<void>;
 }
 
-export function FormRenderer({ form, onSubmit }: FormRendererProps) {
-  const [responses, setResponses] = useState<Record<string, unknown>>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleFieldChange = (fieldId: string, value: unknown) => {
-    setResponses((prev) => ({ ...prev, [fieldId]: value }));
-    // Clear error when user starts typing
-    if (errors[fieldId]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[fieldId];
-        return newErrors;
-      });
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    form.fields.forEach((field: FormField) => {
-      if (field.mand && !responses[field.fieldId]) {
-        newErrors[field.fieldId] = `${field.displayName} is required`;
-      }
-
-      // Email validation
-      if (field.type === 'EMAIL' && responses[field.fieldId]) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(responses[field.fieldId] as string)) {
-          newErrors[field.fieldId] = 'Invalid email address';
-        }
-      }
-
-      // Phone validation (basic)
-      if (field.type === 'PHONE' && responses[field.fieldId]) {
-        const phoneRegex = /^[\d\s\-\+\(\)]+$/;
-        if (!phoneRegex.test(responses[field.fieldId] as string)) {
-          newErrors[field.fieldId] = 'Invalid phone number';
-        }
-      }
-
-      // Custom validation
-      if (field.validation) {
-        const value = responses[field.fieldId] as string;
-        if (value) {
-          if (field.validation.minLength && value.length < field.validation.minLength) {
-            newErrors[field.fieldId] = `Minimum ${field.validation.minLength} characters required`;
-          }
-          if (field.validation.maxLength && value.length > field.validation.maxLength) {
-            newErrors[field.fieldId] = `Maximum ${field.validation.maxLength} characters allowed`;
-          }
-          if (field.validation.pattern && !new RegExp(field.validation.pattern).test(value)) {
-            newErrors[field.fieldId] = 'Invalid format';
-          }
-        }
-      }
-    });
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+function ClassicForm({ form, onSubmit }: FormRendererProps) {
+  const {
+    responses, errors, isSubmitting, draftRestored,
+    answeredCount, totalCount, progress,
+    setFieldValue, clear, submit,
+  } = useFormResponses(form, onSubmit);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      toast.error('Please fix the errors before submitting');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      await onSubmit(responses);
-      toast.success('Form submitted successfully!');
-      // Reset form
-      setResponses({});
-    } catch (error) {
-      toast.error('Failed to submit form. Please try again.');
-      console.error('Form submission error:', error);
-    } finally {
-      setIsSubmitting(false);
+    const ok = await submit();
+    if (!ok) {
+      const firstErrorId = form.fields.find((field) => errors[field.fieldId])?.fieldId;
+      if (firstErrorId) {
+        document.getElementById(firstErrorId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
   };
 
   return (
-    <Card className="max-w-3xl mx-auto border-none shadow-none">
-      <CardHeader>
-        <CardTitle className="text-2xl">{form.formName}</CardTitle>
-        {form.description && (
-          <CardDescription className="text-base">{form.description}</CardDescription>
-        )}
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-12">
-          {form.fields.map((field: FormField) => (
-            <DynamicField
-              key={field.fieldId}
-              field={field}
-              value={responses[field.fieldId]}
-              onChange={(value) => handleFieldChange(field.fieldId, value)}
-              error={errors[field.fieldId]}
-            />
-          ))}
+    <div className="pf-form">
+      <header className="pf-form-head">
+        {form.category && form.category !== 'custom' && <p className="pf-kicker">{form.category}</p>}
+        <h1>{form.formName}</h1>
+        {form.description && <p>{form.description}</p>}
+        <div className="pf-progress-meta">
+          <span>{totalCount} {totalCount === 1 ? 'question' : 'questions'}</span>
+          <span aria-live="polite">{answeredCount} answered</span>
+        </div>
+        <div className="pf-progress" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label="Form completion">
+          <span style={{ width: `${progress}%` }} />
+        </div>
+        {draftRestored && <p className="pf-draft-note">Picked up where you left off.</p>}
+      </header>
 
-          <div className="flex justify-end gap-4 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setResponses({})}
-              disabled={isSubmitting}
-            >
-              Clear
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : 'Submit'}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      <form onSubmit={handleSubmit} className="pf-fields" noValidate>
+        {form.fields.map((field: FormField) => (
+          <DynamicField
+            key={field.fieldId}
+            field={field}
+            value={responses[field.fieldId]}
+            onChange={(value) => setFieldValue(field.fieldId, value)}
+            error={errors[field.fieldId]}
+          />
+        ))}
+
+        <div className="pf-actions">
+          <button type="button" className="pf-clear" onClick={clear} disabled={isSubmitting}>
+            Clear
+          </button>
+          <button type="submit" className="pf-submit" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <><Loader2 size={16} className="animate-spin" /> Submitting…</>
+            ) : (
+              <>Submit response <ArrowRight size={15} /></>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
   );
+}
+
+export function FormRenderer({ form, onSubmit }: FormRendererProps) {
+  if (form.presentation === 'conversational') {
+    return <ConversationalForm form={form} onSubmit={onSubmit} />;
+  }
+  return <ClassicForm form={form} onSubmit={onSubmit} />;
 }

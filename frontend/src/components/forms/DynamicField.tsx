@@ -152,7 +152,7 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
         return (
           <Select value={stringValue} onValueChange={onChange} required={field.mand}>
             <SelectTrigger>
-              <SelectValue placeholder={`Select ${field.displayName}`} />
+              <SelectValue placeholder={field.placeholder || 'Choose an option'} />
             </SelectTrigger>
             <SelectContent>
               {field.choices?.map((choice, idx) => (
@@ -233,7 +233,7 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
                 key={rating}
                 type="button"
                 onClick={() => onChange(rating)}
-                className={`w-10 h-10 rounded-full border-2 transition-colors ${numberValue === rating
+                className={`pf-rating-btn w-10 h-10 rounded-full border-2 transition-colors ${numberValue === rating
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'border-gray-300 hover:border-primary'
                   }`}
@@ -357,7 +357,7 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" id={field.fieldId}>
       <Label htmlFor={field.fieldId}>
         {field.displayName}
         {field.mand && <span className="text-red-500 ml-1">*</span>}
