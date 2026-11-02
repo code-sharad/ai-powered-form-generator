@@ -44,13 +44,10 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
   const arrayValue = (Array.isArray(value) ? value : []) as string[];
   const numberValue = value as number;
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadFile = async (file: File) => {
+    if (isUploading) return;
 
-    // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
+    if (file.size > 10 * 1024 * 1024) {
       toast.error('File size must be less than 10MB');
       return;
     }
@@ -59,15 +56,12 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
     setUploadProgress('Uploading...');
 
     try {
-      // Upload to Cloudinary
       const result = await uploadService.uploadToCloudinary(file, {
         folder: 'form-submissions',
         resourceType: 'auto',
       });
 
       setUploadProgress('Upload complete!');
-
-      // Store the upload result
       onChange({
         fileName: file.name,
         fileSize: file.size,
@@ -85,6 +79,23 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    if (file) void uploadFile(file);
+  };
+
+  const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const file = event.dataTransfer.files[0];
+    if (file) void uploadFile(file);
+  };
+
+  const preventFileDropNavigation = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   const handleRemoveFile = () => {
@@ -259,7 +270,12 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
         return (
           <div className="space-y-3">
             {!fileValue ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors"
+                onDragEnter={preventFileDropNavigation}
+                onDragOver={preventFileDropNavigation}
+                onDrop={handleFileDrop}
+              >
                 <input
                   type="file"
                   id={field.fieldId}

@@ -17,8 +17,8 @@ import time
 import urllib.request
 
 FORM_URL = os.environ.get('FORM_URL', 'http://localhost:3000/forms/workshop-registration')
-FILE_PATH = Path(os.environ.get('FILE_PATH', Path(__file__).resolve().parents[2] / 'assets/image-1.png')).resolve()
 ELEMENT = 'element-6066-11e4-a52e-4f735466cecf'
+FILE_PATH = Path(os.environ.get('FILE_PATH', Path(__file__).resolve().parents[2] / 'assets/image-1.png')).resolve()
 
 
 def request(base, method, path, data=None):
@@ -109,7 +109,30 @@ target.dispatchEvent(event); return event.defaultPrevented;"""
             raise AssertionError(f'Dropped image did not upload. Page text: {text[-300:]}')
         current_url = command('GET', '/url')
         assert current_url == FORM_URL, f'Drop navigated away to {current_url}'
-        print('PASS dragover prevents navigation, dropped image uploads, and page stays open')
+        command('POST', '/execute/sync', {
+            'script': 'localStorage.clear(); sessionStorage.clear(); location.reload()', 'args': [],
+        })
+        for _ in range(100):
+            if command('POST', '/execute/sync', {
+                'script': "return !!document.querySelector('input[type=file]')", 'args': [],
+            }):
+                break
+            time.sleep(0.1)
+        input_id = command('POST', '/element', {
+            'using': 'css selector', 'value': 'input[type=file]',
+        })[ELEMENT]
+        command('POST', f'/element/{input_id}/value', {'text': str(FILE_PATH)})
+        for _ in range(200):
+            text = command('POST', '/execute/sync', {
+                'script': 'return document.body.innerText', 'args': [],
+            })
+            if 'Uploaded' in text:
+                break
+            time.sleep(0.1)
+        else:
+            raise AssertionError(f'Picker selection did not upload. Page text: {text[-300:]}')
+        assert command('GET', '/url') == FORM_URL, 'Picker upload navigated away from the form'
+        print('PASS drag/drop upload prevents navigation; file picker still uploads')
     finally:
         if session:
             try:
