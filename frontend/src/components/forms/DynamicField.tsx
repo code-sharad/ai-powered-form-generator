@@ -35,6 +35,7 @@ interface DynamicFieldProps {
 }
 
 export function DynamicField({ field, value, onChange, error }: DynamicFieldProps) {
+  const fileInputId = `${field.fieldId}-file`;
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>('');
 
@@ -278,14 +279,14 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
               >
                 <input
                   type="file"
-                  id={field.fieldId}
+                  id={fileInputId}
                   className="hidden"
                   onChange={handleFileUpload}
                   disabled={isUploading}
                   accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
                 />
                 <label
-                  htmlFor={field.fieldId}
+                  htmlFor={fileInputId}
                   className="cursor-pointer flex flex-col items-center"
                 >
                   {isUploading ? (
@@ -374,7 +375,7 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
 
   return (
     <div className="space-y-2" id={field.fieldId}>
-      <Label htmlFor={field.fieldId}>
+      <Label htmlFor={field.type === 'FILE_UPLOAD' ? fileInputId : field.fieldId}>
         {field.displayName}
         {field.mand && <span className="text-red-500 ml-1">*</span>}
       </Label>
