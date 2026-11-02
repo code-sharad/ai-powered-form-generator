@@ -35,7 +35,7 @@ export const config = {
   },
   mail: {
     resendApiKey: process.env.RESEND_API_KEY,
-    from: process.env.MAIL_FROM || 'Formora <onboarding@resend.dev>',
+    from: process.env.MAIL_FROM?.trim() || 'Formora <onboarding@resend.dev>',
   },
   magicLink: {
     ttlMinutes: 15,

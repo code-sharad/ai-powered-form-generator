@@ -36,6 +36,7 @@ export async function sendMail({ to, subject, text, html }: SendMailInput): Prom
       Authorization: `Bearer ${config.mail.resendApiKey}`,
       'Content-Type': 'application/json',
     },
+    signal: AbortSignal.timeout(10000),
     body: JSON.stringify({
       from: config.mail.from,
       to,
@@ -46,6 +47,8 @@ export async function sendMail({ to, subject, text, html }: SendMailInput): Prom
   });
 
   if (!response.ok) {
+    const detail = (await response.text()).slice(0, 500);
+    console.error(`[mailer] resend rejected the send: ${response.status} ${detail}`);
     throw new AppError(502, 'Could not send email');
   }
 }

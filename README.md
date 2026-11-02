@@ -77,6 +77,17 @@ CLOUDINARY_API_SECRET=<your-api-secret>
 Frontend will be available at `http://localhost:3000` and backend at `http://localhost:8080`.
 
 
+### Email delivery (Resend)
+
+Magic-link sign-in sends through Resend. Create an API key at resend.com and set `RESEND_API_KEY` in `backend/.env`. Set `MAIL_FROM` to an address on a domain you have verified in Resend.
+
+The default sender, `onboarding@resend.dev`, only delivers to the Resend account owner. Every other recipient needs a verified domain.
+
+Set `FRONTEND_URL` to the public address of the frontend. It is the base of every link, and production refuses to build a link without it.
+
+Outside production, a missing key prints the link to the backend console instead of sending mail. In production the request fails until the key is set, and the backend logs the Resend rejection reason when a send is refused.
+
+
 4) Run Application
 ```bash
 # Frontend

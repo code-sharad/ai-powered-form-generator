@@ -10,6 +10,7 @@ import SubmissionRouter from "@/routes/submission.route"
 import AuthRouter from "@/routes/auth.route"
 import mongoose from 'mongoose';
 import { connectDB, disconnectDB } from './config/database';
+import { resolveMailTransport } from '@/services/mailer';
 import morgan from 'morgan';
 
 const app = express();
@@ -50,8 +51,14 @@ async function startServer() {
   try {
     await connectDB();
 
-    if (config.nodeEnv === 'production' && !config.mail.resendApiKey) {
+    const mailTransport = resolveMailTransport({
+      RESEND_API_KEY: config.mail.resendApiKey,
+      NODE_ENV: config.nodeEnv,
+    });
+    if (mailTransport === 'unconfigured') {
       console.error('[mailer] RESEND_API_KEY is not set. Magic-link requests will fail until it is.');
+    } else {
+      console.log(`[mailer] sending through ${mailTransport} as ${config.mail.from}`);
     }
 
     app.listen(Number(process.env.PORT) || 8080, () => {
