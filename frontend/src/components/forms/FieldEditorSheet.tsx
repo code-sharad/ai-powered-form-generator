@@ -343,7 +343,7 @@ export function FieldEditorSheet({ field, open, index, total, returnFocusRef, on
                     </span>
                   </SelectTrigger>
                   <SelectContent className="field-type-menu" position="popper" align="start" sideOffset={6}>
-                    {FIELD_TYPE_META.map((fieldType) => {
+                    {FIELD_TYPE_META.filter((fieldType) => fieldType.value !== 'SIGNATURE').map((fieldType) => {
                       const Icon = fieldType.icon;
                       return (
                         <SelectItem key={fieldType.value} value={fieldType.value} className="field-type-item">

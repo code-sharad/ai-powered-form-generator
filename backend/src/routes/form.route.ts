@@ -13,7 +13,7 @@ import { Submission } from "@/models/Submissin.model";
 // Define Zod schema for form generation
 const fieldZodSchema = z.object({
   fieldId: z.string().describe('Unique field identifier'),
-  type: z.enum(['NAME', 'EMAIL', 'PHONE', 'ADDRESS', 'DROPDOWN', 'RADIO', 'CHECKBOX', 'DATE', 'SIGNATURE', 'SINGLE_LINE', 'MULTI_LINE', 'MULTIPLE_CHOICE', 'GRID', 'FILE_UPLOAD', 'RATING']).describe('Field type'),
+  type: z.enum(['NAME', 'EMAIL', 'PHONE', 'ADDRESS', 'DROPDOWN', 'RADIO', 'CHECKBOX', 'DATE', 'SINGLE_LINE', 'MULTI_LINE', 'MULTIPLE_CHOICE', 'GRID', 'FILE_UPLOAD', 'RATING']).describe('Field type'),
   displayName: z.string().describe('Label shown to user'),
   mand: z.boolean().default(false).describe('Is field mandatory'),
   choices: z.array(z.string()).optional().describe('Options for dropdown/radio/checkbox'),

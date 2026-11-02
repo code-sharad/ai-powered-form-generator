@@ -30,7 +30,6 @@ const fieldTypeOptions: { value: FieldType; label: string }[] = [
   { value: 'DATE', label: 'Date' },
   { value: 'RATING', label: 'Rating' },
   { value: 'FILE_UPLOAD', label: 'File Upload' },
-  { value: 'SIGNATURE', label: 'Signature' },
 ];
 
 export function AddFieldDialog({ onAddField }: AddFieldDialogProps) {
