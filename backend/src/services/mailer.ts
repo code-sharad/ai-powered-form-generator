@@ -51,6 +51,9 @@ export async function sendMail({ to, subject, text, html }: SendMailInput): Prom
     console.error(`[mailer] resend rejected the send: ${response.status} ${detail}`);
     throw new AppError(502, 'Could not send email');
   }
+
+  const sent = (await response.json().catch(() => undefined)) as { id?: string } | undefined;
+  console.log(`[mailer] resend accepted id=${sent?.id ?? 'unknown'} to=${to}`);
 }
 
 interface SendMagicLinkEmailInput {
