@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Manrope, Geist_Mono } from "next/font/google";
+import { Manrope, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import "./redesign.css";
 import "./design-system.css";
-import "./visitors.css";
+import "./landing.css";
 import "./public-form.css";
 import "./theme.css";
 import "./field-editor.css";
@@ -19,9 +19,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
-  title: "Formora — A form builder that starts with a sentence.",
-  description: "Describe what you need to ask. Formora drafts the questions — refine every field in a visual builder, publish a link, and chart responses in one workspace.",
+  title: "Formora — Start with a sentence. Ship a form.",
+  description: "Describe what you need to ask. Formora drafts the questions, you refine every field, then publish one link and chart the answers in one workspace.",
 };
 
 export default function RootLayout({
@@ -32,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
       >
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('form-ai-theme');var d=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){var d=matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}` }} />
         <Providers>{children}</Providers>
