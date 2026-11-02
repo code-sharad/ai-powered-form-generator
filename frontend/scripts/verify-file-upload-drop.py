@@ -75,6 +75,10 @@ def main():
         else:
             raise AssertionError(f'No file-upload input loaded at {FORM_URL}')
 
+        assert command('POST', '/execute/sync', {
+            'script': "const input=document.querySelector('input[type=file]'); return [...document.querySelectorAll('label')].some(label => label.control === input)",
+            'args': [],
+        }), 'Click label is not associated with the file input'
         rect = command('POST', '/execute/sync', {
             'script': "const r=document.querySelector('input[type=file]').parentElement.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}",
             'args': [],
