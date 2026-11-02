@@ -1,0 +1,114 @@
+/* Segmented sign-in method control. */
+.auth-method {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: #edf1f8;
+  border-radius: 9px;
+  margin-bottom: 6px;
+}
+.auth-method button {
+  border: 0;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #657187;
+  background: transparent;
+}
+.auth-method button.is-active {
+  background: white;
+  color: #245bea;
+  box-shadow: 0 1px 2px #233d650d;
+}
+
+/* Sent state after requesting a magic link. */
+.auth-sent {
+  display: grid;
+  gap: 12px;
+}
+.auth-sent h1 {
+  margin-bottom: 6px;
+}
+.auth-sent-copy {
+  font-size: 13px;
+  color: #657187;
+}
+.auth-sent-copy strong {
+  color: #17243b;
+}
+.auth-sent-note {
+  font-size: 12px;
+  color: #657187;
+}
+.auth-sent-change {
+  border: 0;
+  background: none;
+  color: #245bea;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 0;
+  margin-top: 4px;
+}
+
+/* Magic-link verify page. */
+.auth-verify-page {
+  grid-template-columns: 1fr;
+}
+.auth-verify-card {
+  max-width: 420px;
+  text-align: center;
+}
+.auth-verify-brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 34px;
+}
+.auth-verify-state {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+.auth-verify-state p {
+  font-size: 13px;
+  color: #657187;
+}
+.auth-verify-state .action-button {
+  margin-top: 8px;
+}
+.auth-verify-error {
+  font-size: 14px;
+  color: #a03232;
+}
+.auth-verify-spinner {
+  color: #245bea;
+}
+
+.dark .auth-method {
+  background: #3a3a3c;
+}
+.dark .auth-method button {
+  color: var(--muted-foreground);
+}
+.dark .auth-method button.is-active {
+  background: #48484a;
+  color: #64a8ff;
+}
+.dark .auth-sent-copy strong {
+  color: var(--foreground);
+}
+.dark .auth-sent-copy,
+.dark .auth-sent-note,
+.dark .auth-verify-state p {
+  color: var(--muted-foreground);
+}
+.dark .auth-sent-change {
+  color: #64a8ff;
+}
+.dark .auth-verify-error {
+  color: #ff9f9a;
+}
+.dark .auth-verify-spinner {
+  color: #64a8ff;
+}

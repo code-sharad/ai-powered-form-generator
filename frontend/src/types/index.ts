@@ -26,6 +26,16 @@ export interface SignupCredentials {
   password: string;
 }
 
+export interface MagicLinkRequest {
+  email: string;
+  name?: string;
+}
+
+export interface MagicLinkResponse {
+  success: boolean;
+  message: string;
+}
+
 // Form Types
 export type FieldType =
   | 'NAME'

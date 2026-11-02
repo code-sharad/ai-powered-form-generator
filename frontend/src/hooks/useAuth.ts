@@ -2,7 +2,7 @@ import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/authService';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import type { LoginCredentials, SignupCredentials } from '@/types';
+import type { LoginCredentials, MagicLinkRequest, SignupCredentials } from '@/types';
 
 export function useAuth() {
   const { user, isAuthenticated, setAuth, logout: storeLogout } = useAuthStore();
@@ -47,6 +47,36 @@ export function useAuth() {
     }
   };
 
+  const requestMagicLink = async (payload: MagicLinkRequest) => {
+    try {
+      await authService.requestMagicLink(payload);
+      return { success: true };
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string; error?: string } }; message?: string };
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Could not send the link';
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const verifyMagicLink = async (token: string) => {
+    try {
+      const response = await authService.verifyMagicLink(token);
+
+      if (response.success && response.data.user && response.token) {
+        setAuth(response.data.user, response.token);
+        toast.success('Signed in');
+        router.replace('/dashboard');
+        return { success: true };
+      } else {
+        throw new Error(response.message || 'Verification failed');
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string; error?: string } }; message?: string };
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Verification failed';
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const logout = () => {
     storeLogout();
     toast.success('Logged out successfully');
@@ -58,6 +88,8 @@ export function useAuth() {
     isAuthenticated,
     login,
     signup,
+    requestMagicLink,
+    verifyMagicLink,
     logout,
   };
 }

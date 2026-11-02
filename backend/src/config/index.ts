@@ -32,7 +32,17 @@ export const config = {
   jwt: {
     secret: process.env.JWT_SECRET || 'hi',
     expiresIn: '7d',
-  }
+  },
+  mail: {
+    resendApiKey: process.env.RESEND_API_KEY,
+    from: process.env.MAIL_FROM?.trim() || 'Formora <onboarding@resend.dev>',
+  },
+  magicLink: {
+    ttlMinutes: 15,
+    requestLimitPerEmail: 3,
+    requestLimitPerIp: 10,
+    requestWindowMs: 15 * 60 * 1000,
+  },
 } as const;
 
 export const isDevelopment = config.nodeEnv === 'development';
