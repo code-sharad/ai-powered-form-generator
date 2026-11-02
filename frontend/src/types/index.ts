@@ -87,20 +87,8 @@ export interface GenerateFormRequest {
   query: string;
 }
 
-export interface GenerateFormResponse {
-  success: boolean;
-  message: string;
-  data: {
-    formName: string;
-    description: string;
-    category: string;
-    fields: FormField[];
-  };
-}
-
 // Aliases for consistency
 export type FormGenerationRequest = GenerateFormRequest;
-export type FormGenerationResponse = GenerateFormResponse;
 
 // Submission Types
 export interface Submission {

@@ -1,21 +1,67 @@
+import axios from 'axios';
+import { z } from 'zod';
 import { api } from '@/lib/api';
 import type {
   Form,
   FormGenerationRequest,
-  FormGenerationResponse,
   ApiResponse
 } from '@/types';
 
+export type GenerationRequestError = 'network' | 'timeout' | 'request' | 'session';
+
+export type GenerateFormResult =
+  | { ok: true }
+  | { ok: false; error: GenerationRequestError };
+
+const generationSuccessSchema = z.object({
+  success: z.literal(true),
+  message: z.string(),
+  data: z.object({
+    formName: z.string(),
+    description: z.string(),
+    category: z.enum(['appointment', 'registration', 'order', 'application', 'feedback', 'survey', 'custom']),
+    fields: z.array(z.object({
+      fieldId: z.string(),
+      type: z.enum(['NAME', 'EMAIL', 'PHONE', 'ADDRESS', 'DROPDOWN', 'RADIO', 'CHECKBOX', 'DATE', 'SIGNATURE', 'SINGLE_LINE', 'MULTI_LINE', 'MULTIPLE_CHOICE', 'GRID', 'FILE_UPLOAD', 'RATING']),
+      displayName: z.string(),
+      mand: z.boolean(),
+      choices: z.array(z.string()).optional(),
+      gridOptions: z.array(z.string()).optional(),
+      validation: z.object({
+        minLength: z.number().optional(),
+        maxLength: z.number().optional(),
+        pattern: z.string().optional(),
+      }).optional(),
+      placeholder: z.string().optional(),
+    })),
+  }),
+});
+
 export const formService = {
   // Generate form with AI
-  async generateForm(query: FormGenerationRequest): Promise<FormGenerationResponse> {
-    const response = await api.post<FormGenerationResponse>('/form/generate', query);
-    return response.data;
+  async generateForm(query: FormGenerationRequest): Promise<GenerateFormResult> {
+    try {
+      const response = await api.post<unknown>('/form/generate', query, { suppressErrorToast: true });
+      return generationSuccessSchema.safeParse(response.data).success
+        ? { ok: true }
+        : { ok: false, error: 'request' };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) return { ok: false, error: 'session' };
+        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+          return { ok: false, error: 'timeout' };
+        }
+        if (!error.response && (error.code === 'ERR_NETWORK' || error.request)) {
+          return { ok: false, error: 'network' };
+        }
+      }
+      return { ok: false, error: 'request' };
+    }
   },
 
   // Get all user forms
   async getUserForms(): Promise<Form[]> {
-    const response = await api.get<ApiResponse<Form[]>>('/form');
+    const response = await api.get<ApiResponse<Form[]>>('/form', { suppressErrorToast: true });
     return response.data.data || [];
   },
 

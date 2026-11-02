@@ -2,6 +2,12 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    suppressErrorToast?: boolean;
+  }
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 // Create axios instance
@@ -35,6 +41,10 @@ api.interceptors.response.use(
     return response;
   },
   (error: AxiosError<{ error?: string; message?: string }>) => {
+    if (error.config?.suppressErrorToast && error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+
     // Handle different error status codes
     if (error.response) {
       const { status, data } = error.response;

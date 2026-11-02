@@ -90,6 +90,8 @@ html.dark {
 .dark .dashboard-prompt-dock .prompt-panel textarea { color: #f5f5f7; }
 .dark .dashboard-prompt-dock .prompt-panel textarea::placeholder { color: #aeaeb2; }
 .dark .dashboard-prompt-dock .prompt-panel .action-button { background: var(--dark-action); border-color: var(--dark-action); color: #fff; }
+.dark .prompt-notice { color: #c7c7cc; }
+.dark .prompt-notice[role="alert"] { color: #ffb3b8; }
 .dark .workspace-alert { background: #3a2527; border-color: #704348; color: #ffb3b8; }
 .dark .presentation-toggle { background: #2c2c2e; border-color: #48484a; }
 .dark .presentation-toggle button { color: #aeaeb2; }
