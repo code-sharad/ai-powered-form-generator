@@ -50,8 +50,12 @@ async function startServer() {
   try {
     await connectDB();
 
-    app.listen(8080, () => {
-      console.log(`Server running on port 8080`)
+    if (config.nodeEnv === 'production' && !config.mail.resendApiKey) {
+      console.error('[mailer] RESEND_API_KEY is not set. Magic-link requests will fail until it is.');
+    }
+
+    app.listen(Number(process.env.PORT) || 8080, () => {
+      console.log(`Server running on port ${Number(process.env.PORT) || 8080}`)
     })
   } catch (error) {
     console.log('Failed to start server');
