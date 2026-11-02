@@ -68,12 +68,13 @@
 .simple-dashboard .empty-state h2 { font-size: 19px; }.simple-dashboard .empty-state p { font-size: 12px; }.simple-dashboard .empty-state .text-link { margin-top: 16px; }
 
 .prompt-notice { display: flex; align-items: flex-start; gap: 8px; min-width: 0; margin-top: 10px; color: #655773; font-size: 12px; line-height: 1.5; }
-.prompt-notice:empty { display: none; }
+.prompt-notice:empty { margin-top: 0; }
 .prompt-notice > svg { flex-shrink: 0; margin-top: 2px; }
 .prompt-notice > span { min-width: 0; overflow-wrap: anywhere; }
 .prompt-notice[role="alert"] { color: #a43842; }
 .prompt-panel button:disabled { cursor: not-allowed; opacity: .55; }
-.dashboard-prompt-dock .prompt-notice { margin-top: 0; padding: 4px 18px 0; font-size: 11px; }
+.dashboard-prompt-dock .prompt-notice { margin-top: 0; padding: 0 18px; font-size: 11px; }
+.dashboard-prompt-dock .prompt-notice:not(:empty) { padding-top: 4px; }
 /* The composer stays in reach. The opaque fallback works without backdrop-filter. */
 .dashboard-prompt-dock { position: fixed; left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(850px, calc(100% - 48px)); z-index: 40; border: 1px solid #e4daee; border-radius: 18px; background: #faf7fe; box-shadow: 0 8px 35px #58416b12, 0 1px 4px #58416b06; }
 @supports (backdrop-filter: blur(20px)) { .dashboard-prompt-dock { background: #fcf9ffb8; backdrop-filter: blur(22px) saturate(1.4); -webkit-backdrop-filter: blur(22px) saturate(1.4); } }

@@ -65,6 +65,7 @@ export function AIPromptBar({ onGenerated, compact = false }: AIPromptBarProps) 
     setGeneration({ status: 'pending' });
     const result = await formService.generateForm({ query: prompt });
     submissionLock.current = false;
+    acknowledgeReconnect();
 
     if (result.ok) {
       setGeneration({ status: 'succeeded' });
