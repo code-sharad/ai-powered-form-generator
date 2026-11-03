@@ -34,64 +34,61 @@ export function SortableFieldItem({ field, index, total, onDelete, onUpdate }: S
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.45 : 1,
   };
 
   const detail = meta.hasChoices
     ? `${field.choices?.length ?? 0} ${(field.choices?.length ?? 0) === 1 ? 'option' : 'options'}`
     : field.placeholder
-      ? `Placeholder: ${field.placeholder}`
+      ? field.placeholder
       : meta.description;
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`form-field-card${isEditing ? ' is-editing' : ''}`}
-    >
+    <li ref={setNodeRef} style={style} className={`question-row${isDragging ? ' is-dragging' : ''}`}>
       <button
         type="button"
         aria-label={`Reorder ${field.displayName}`}
-        className="form-field-drag"
+        className="question-handle"
         {...attributes}
         {...listeners}
       >
-        <GripVertical size={17} />
+        <GripVertical size={16} aria-hidden="true" />
       </button>
+
+      <span className="question-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
 
       <button
         type="button"
         ref={editButtonRef}
-        className="form-field-card-main"
+        className="question-main"
         onClick={() => setIsEditing(true)}
         aria-label={`Edit ${field.displayName}`}
         aria-haspopup="dialog"
         aria-expanded={isEditing}
       >
-        <span className="form-field-type-icon" aria-hidden="true">
+        <span className="question-icon" aria-hidden="true">
           <TypeIcon size={17} />
         </span>
-        <span className="form-field-card-copy">
-          <span className="form-field-card-title-row">
-            <span className="form-field-card-title">{field.displayName || 'Untitled question'}</span>
-            {field.mand && <span className="form-field-required">Required</span>}
+        <span className="question-copy">
+          <span className="question-title-row">
+            <span className="question-title">{field.displayName || 'Untitled question'}</span>
+            {field.mand && <span className="question-required"><i aria-hidden="true" />Required</span>}
           </span>
-          <span className="form-field-card-meta">
-            <span className="form-field-card-type">{meta.label}</span>
-            <span className="form-field-card-dot" aria-hidden="true" />
-            <span className="form-field-card-detail">{detail}</span>
+          <span className="question-meta">
+            <span className="question-type">{meta.label}</span>
+            <span className="question-dot" aria-hidden="true" />
+            <span className="question-detail">{detail}</span>
           </span>
         </span>
-        <span className="form-field-card-edit" aria-hidden="true"><Pencil size={14} /></span>
+        <Pencil className="question-edit" size={14} aria-hidden="true" />
       </button>
 
       <button
         type="button"
-        className="form-field-delete"
+        className="question-delete"
         onClick={() => onDelete(field.fieldId)}
         aria-label={`Delete ${field.displayName}`}
       >
-        <Trash2 size={15} />
+        <Trash2 size={15} aria-hidden="true" />
       </button>
 
       <FieldEditorSheet
@@ -103,6 +100,6 @@ export function SortableFieldItem({ field, index, total, onDelete, onUpdate }: S
         onOpenChange={setIsEditing}
         onSave={onUpdate}
       />
-    </div>
+    </li>
   );
 }

@@ -110,7 +110,7 @@ body { color: var(--ink); }
 .presentation-toggle button:disabled { opacity: .6; cursor: default; }
 @media (max-width: 380px) { .presentation-toggle button { padding-inline: 9px; font-size: 10.5px; } }
 .editor-heading h1 { font-weight: 500; letter-spacing: -.04em; }
-.auth-story { background: #f7f7f8; border-right: 1px solid var(--line); }.auth-story-copy h2 { font-weight: 500; }.auth-story-copy > p, .auth-story-footer { color: #858585; }.auth-story-steps > span { color: #626262; }.auth-story-steps svg { color: #87968f; }.auth-form-wrap h1 { font-weight: 500; }.auth-form-wrap > p, .auth-switch, .auth-form small { color: #858585; }.auth-form input { border-color: #ddd; border-radius: 5px; }.auth-form label { font-weight: 500; }.auth-switch a { color: var(--blue); }
+.auth-story { background: #f7f7f8; border-right: 1px solid var(--line); }.auth-story-copy h2 { font-weight: 500; }.auth-story-copy > p, .auth-story-footer { color: #858585; }.auth-story-steps > span { color: #626262; }.auth-story-steps svg { color: #87968f; }.auth-form-wrap h1 { font-weight: 500; }.auth-form-wrap > p, .auth-switch, .auth-form small { color: #858585; }.auth-switch a { color: var(--blue); }
 
 /* Small type keeps AA contrast even on the secondary gray surfaces. */
 .preview-sidebar-label, .preview-new, .preview-account small,
@@ -127,7 +127,7 @@ body { color: var(--ink); }
 .auth-story-copy > p, .auth-story-footer, .auth-form-wrap > p,
 .auth-switch, .auth-form small { color: #6b6b6b; }
 .product-form-fields > input::placeholder, .interactive-form input::placeholder,
-.auth-form input::placeholder, .prompt-panel textarea::placeholder,
+
 .search-input::placeholder { color: #737373; opacity: 1; }
 .app-content .workspace-header nav a { color: #6b6b6b; }
 .form-card-status:not(.published) { color: #60646c; background: #f2f3f5; }

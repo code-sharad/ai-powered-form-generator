@@ -28,6 +28,12 @@ describe('analytics date ranges', () => {
     expect(data[11]).toEqual({ date: '2024-12-01', label: 'Dec', count: 7 });
   });
 
+  test('allows multi-year ranges when buckets are monthly', () => {
+    const range = parseAnalyticsRange({ startDate: '2024-01-01', endDate: '2026-01-01', groupBy: 'month' });
+    expect(range.periodDays).toBe(732);
+    expect(buildAnalyticsSeries(range, [])).toHaveLength(25);
+  });
+
   test('labels buckets using UTC even across year boundaries', () => {
     const range = parseAnalyticsRange({ startDate: '2025-12-31', endDate: '2026-01-01' });
     expect(buildAnalyticsSeries(range, []).map(point => point.label)).toEqual(['Dec 31', 'Jan 1']);

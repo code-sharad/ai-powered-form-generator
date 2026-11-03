@@ -88,6 +88,7 @@ router.post('/signup', async (req: Request, res: Response) => {
           id: newUser._id,
           name: newUser.name,
           email: newUser.email,
+          createdAt: newUser.createdAt,
         }
       }
     });
@@ -122,6 +123,7 @@ router.post('/login', async (req: Request, res: Response) => {
           id: user._id,
           name: user.name,
           email: user.email,
+          createdAt: user.createdAt,
         }
       },
       token: token
@@ -236,6 +238,7 @@ router.post('/magic-link/verify', async (req: Request, res: Response) => {
           id: user._id,
           name: user.name,
           email: user.email,
+          createdAt: user.createdAt,
         },
       },
       token,
@@ -269,6 +272,7 @@ router.get('/me', async (req: Request, res: Response) => {
           id: user._id,
           name: user.name,
           email: user.email,
+          createdAt: user.createdAt,
         }
       }
     });

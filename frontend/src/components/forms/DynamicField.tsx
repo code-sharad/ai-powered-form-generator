@@ -1,22 +1,17 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { FormField } from '@/types';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Checkbox } from '@/components/arc/checkbox/checkbox';
+import { DatePicker } from '@/components/arc/date-picker/date-picker';
+import { Input } from '@/components/arc/input/input';
+import { RadioGroup } from '@/components/arc/radio-group/radio-group';
+import { Rating } from '@/components/arc/rating/rating';
+import { Select } from '@/components/arc/select/select';
+import { Textarea } from '@/components/arc/textarea/textarea';
+import { Button } from '@/components/arc/button/button';
 import { uploadService } from '@/services/uploadService';
 import { Upload, X, FileIcon, Loader2, CheckCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toast';
 
 interface UploadedFile {
   fileName: string;
@@ -34,6 +29,31 @@ interface DynamicFieldProps {
   error?: string;
 }
 
+/** Types whose control has no error slot, so the message is rendered beside it. */
+const ERROR_BESIDE_CONTROL = new Set<FormField['type']>([
+  'DATE',
+  'DROPDOWN',
+  'RADIO',
+  'CHECKBOX',
+  'RATING',
+  'FILE_UPLOAD',
+]);
+
+const pad = (value: number) => String(value).padStart(2, '0');
+
+/** The stored contract is a YYYY-MM-DD string; the picker works in the respondent's local time. */
+function toLocalDate(value: string): Date | undefined {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return undefined;
+  const [, year, month, day] = match;
+  return new Date(Number(year), Number(month) - 1, Number(day));
+}
+
+/** Reads the calendar's local date back into YYYY-MM-DD without routing through UTC. */
+function toDateString(date: Date): string {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 export function DynamicField({ field, value, onChange, error }: DynamicFieldProps) {
   const fileInputId = `${field.fieldId}-file`;
   const [isUploading, setIsUploading] = useState(false);
@@ -43,7 +63,10 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
   const stringValue = (value as string) || '';
   const fileValue = value as UploadedFile | null;
   const arrayValue = (Array.isArray(value) ? value : []) as string[];
-  const numberValue = value as number;
+  const ratingValue = typeof value === 'number' ? value : 0;
+  const choices = field.choices ?? [];
+  const choiceOptions = choices.map((choice) => ({ value: choice, label: choice }));
+  const label = `${field.displayName}${field.mand ? ' *' : ''}`;
 
   const uploadFile = async (file: File) => {
     if (isUploading) return;
@@ -110,169 +133,156 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
       case 'SINGLE_LINE':
         return (
           <Input
+            label={label}
             placeholder={field.placeholder || field.displayName}
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
             required={field.mand}
+            error={error}
           />
         );
 
       case 'EMAIL':
         return (
           <Input
+            label={label}
             type="email"
             placeholder={field.placeholder || 'example@email.com'}
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
             required={field.mand}
+            error={error}
           />
         );
 
       case 'PHONE':
         return (
           <Input
+            label={label}
             type="tel"
             placeholder={field.placeholder || '+1 (555) 000-0000'}
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
             required={field.mand}
+            error={error}
           />
         );
 
       case 'MULTI_LINE':
         return (
           <Textarea
+            label={label}
             placeholder={field.placeholder || field.displayName}
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
             required={field.mand}
             rows={4}
+            error={error}
           />
         );
 
       case 'DATE':
         return (
-          <Input
-            type="date"
-            value={stringValue}
-            onChange={(e) => onChange(e.target.value)}
-            required={field.mand}
+          <DatePicker
+            label={label}
+            value={toLocalDate(stringValue)}
+            onChange={(date) => onChange(date ? toDateString(date) : '')}
           />
         );
 
       case 'DROPDOWN':
         return (
-          <Select value={stringValue} onValueChange={onChange} required={field.mand}>
-            <SelectTrigger>
-              <SelectValue placeholder={field.placeholder || 'Choose an option'} />
-            </SelectTrigger>
-            <SelectContent>
-              {field.choices?.map((choice, idx) => (
-                <SelectItem key={idx} value={choice}>
-                  {choice}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Select
+            label={label}
+            options={choiceOptions}
+            placeholder={field.placeholder || 'Choose an option'}
+            value={stringValue}
+            onValueChange={onChange}
+          />
         );
 
       case 'RADIO':
         return (
-          <RadioGroup value={stringValue} onValueChange={onChange} required={field.mand}>
-            {field.choices?.map((choice, idx) => (
-              <div key={idx} className="flex items-center space-x-2">
-                <RadioGroupItem value={choice} id={`${field.fieldId}-${idx}`} />
-                <Label htmlFor={`${field.fieldId}-${idx}`}>{choice}</Label>
-              </div>
-            ))}
-          </RadioGroup>
+          <RadioGroup
+            label={label}
+            name={field.fieldId}
+            options={choiceOptions}
+            value={stringValue}
+            onValueChange={onChange}
+          />
         );
 
       case 'CHECKBOX':
         // Handle both single checkbox and multiple checkboxes
-        if (!field.choices || field.choices.length === 0) {
+        if (choices.length === 0) {
           // Single checkbox (e.g., "I agree to terms")
           const boolValue = value === true || value === 'true';
           return (
-            <div className="flex items-center space-x-2">
+            <fieldset className="pf-choice-group">
+              <legend className="pf-choice-legend">{label}</legend>
               <Checkbox
-                id={field.fieldId}
+                id={`${field.fieldId}-checkbox`}
+                label={field.placeholder || field.displayName}
                 checked={boolValue}
-                onCheckedChange={(checked) => onChange(checked)}
+                onCheckedChange={(checked) => onChange(checked === true)}
               />
-              <Label
-                htmlFor={field.fieldId}
-                className="text-sm font-normal cursor-pointer"
-              >
-                {field.placeholder || field.displayName}
-              </Label>
-            </div>
+            </fieldset>
           );
         }
 
         // Multiple checkboxes with choices
         return (
-          <div className="space-y-2">
-            {field.choices.map((choice, idx) => (
-              <div key={idx} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`${field.fieldId}-${idx}`}
-                  checked={arrayValue.includes(choice)}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      onChange([...arrayValue, choice]);
-                    } else {
-                      onChange(arrayValue.filter((v) => v !== choice));
-                    }
-                  }}
-                />
-                <Label
-                  htmlFor={`${field.fieldId}-${idx}`}
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  {choice}
-                </Label>
-              </div>
+          <fieldset className="pf-choice-group">
+            <legend className="pf-choice-legend">{label}</legend>
+            {choices.map((choice, idx) => (
+              <Checkbox
+                key={idx}
+                id={`${field.fieldId}-${idx}`}
+                label={choice}
+                checked={arrayValue.includes(choice)}
+                onCheckedChange={(checked) => {
+                  if (checked === true) {
+                    onChange([...arrayValue, choice]);
+                  } else {
+                    onChange(arrayValue.filter((v) => v !== choice));
+                  }
+                }}
+              />
             ))}
-          </div>
+          </fieldset>
         );
 
       case 'RATING':
         return (
-          <div className="flex gap-2">
-            {[1, 2, 3, 4, 5].map((rating) => (
-              <button
-                key={rating}
-                type="button"
-                onClick={() => onChange(rating)}
-                className={`pf-rating-btn w-10 h-10 rounded-full border-2 transition-colors ${numberValue === rating
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'border-gray-300 hover:border-primary'
-                  }`}
-              >
-                {rating}
-              </button>
-            ))}
-          </div>
+          <Rating
+            label={label}
+            value={ratingValue}
+            onChange={(next) => onChange(next)}
+            max={5}
+            allowClear={false}
+          />
         );
 
       case 'ADDRESS':
         return (
           <Textarea
+            label={label}
             placeholder={field.placeholder || 'Enter your full address'}
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
             required={field.mand}
             rows={3}
+            error={error}
           />
         );
 
       case 'FILE_UPLOAD':
         return (
-          <div className="space-y-3">
+          <div className="pf-field-stack">
+            <p className="pf-field-label">{label}</p>
             {!fileValue ? (
               <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors"
+                className="pf-dropzone"
                 onDragEnter={preventFileDropNavigation}
                 onDragOver={preventFileDropNavigation}
                 onDrop={handleFileDrop}
@@ -280,83 +290,57 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
                 <input
                   type="file"
                   id={fileInputId}
-                  className="hidden"
+                  className="pf-visually-hidden"
                   onChange={handleFileUpload}
                   disabled={isUploading}
                   accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
                 />
-                <label
-                  htmlFor={fileInputId}
-                  className="cursor-pointer flex flex-col items-center"
-                >
+                <label htmlFor={fileInputId} className="pf-dropzone-label">
                   {isUploading ? (
                     <>
-                      <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
-                      <p className="text-sm text-muted-foreground">{uploadProgress}</p>
+                      <Loader2 className="pf-dropzone-icon pf-spin" aria-hidden="true" />
+                      <span className="pf-dropzone-title">{uploadProgress}</span>
                     </>
                   ) : (
                     <>
-                      <Upload className="h-10 w-10 text-muted-foreground mb-3" />
-                      <p className="text-sm font-medium mb-1">
-                        Click to upload or drag and drop
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        PDF, DOC, DOCX, XLS, XLSX, Images (Max 10MB)
-                      </p>
+                      <Upload className="pf-dropzone-icon" aria-hidden="true" />
+                      <span className="pf-dropzone-title">Click to upload or drag and drop</span>
+                      <span className="pf-dropzone-note">PDF, DOC, DOCX, XLS, XLSX, images (max 10MB)</span>
                     </>
                   )}
                 </label>
               </div>
             ) : (
-              <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-primary/10 p-2 rounded">
-                      {fileValue.fileType?.startsWith('image/') ? (
-                        <div className="relative h-10 w-10">
-                          <Image
-                            src={fileValue.url}
-                            alt={fileValue.fileName}
-                            fill
-                            className="object-cover rounded"
-                          />
-                        </div>
-                      ) : (
-                        <FileIcon className="h-6 w-6 text-primary" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium truncate max-w-[200px]">
-                        {fileValue.fileName}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{(fileValue.fileSize / 1024).toFixed(1)} KB</span>
-                        <CheckCircle className="h-3 w-3 text-green-500" />
-                        <span className="text-green-600">Uploaded</span>
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleRemoveFile}
-                    disabled={isUploading}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                {fileValue.url && (
-                  <a
-                    href={fileValue.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline mt-2 inline-block"
-                  >
-                    View file
-                  </a>
-                )}
+              <div className="pf-file-card">
+                <span className="pf-file-thumb">
+                  {fileValue.fileType?.startsWith('image/') ? (
+                    <Image src={fileValue.url} alt="" width={40} height={40} className="pf-file-image" />
+                  ) : (
+                    <FileIcon size={22} aria-hidden="true" />
+                  )}
+                </span>
+                <span className="pf-file-copy">
+                  <span className="pf-file-name">{fileValue.fileName}</span>
+                  <span className="pf-file-meta">
+                    {(fileValue.fileSize / 1024).toFixed(1)} KB
+                    <CheckCircle size={12} aria-hidden="true" className="pf-file-check" />
+                    Uploaded
+                  </span>
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveFile}
+                  disabled={isUploading}
+                  aria-label="Remove file"
+                >
+                  <X size={15} />
+                </Button>
               </div>
+            )}
+            {fileValue?.url && (
+              <a href={fileValue.url} target="_blank" rel="noopener noreferrer" className="pf-file-link">View file</a>
             )}
           </div>
         );
@@ -364,23 +348,23 @@ export function DynamicField({ field, value, onChange, error }: DynamicFieldProp
       default:
         return (
           <Input
+            label={label}
             placeholder={field.placeholder || field.displayName}
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
             required={field.mand}
+            error={error}
           />
         );
     }
   };
 
   return (
-    <div className="space-y-2" id={field.fieldId}>
-      <Label htmlFor={field.type === 'FILE_UPLOAD' ? fileInputId : field.fieldId}>
-        {field.displayName}
-        {field.mand && <span className="text-red-500 ml-1">*</span>}
-      </Label>
+    <div className="pf-field" id={field.fieldId}>
       {renderField()}
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && ERROR_BESIDE_CONTROL.has(field.type) && (
+        <p className="pf-field-error">{error}</p>
+      )}
     </div>
   );
 }

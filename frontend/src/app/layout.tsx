@@ -7,6 +7,10 @@ import "./landing.css";
 import "./public-form.css";
 import "./theme.css";
 import "./field-editor.css";
+/* Arc owns the semantic tokens (background, surface, border, accent, control
+   heights). Load it after the app sheets so it wins every name it defines. */
+import "@/components/arc/foundation.css";
+import "./arc-bridge.css";
 import { Providers } from "@/components/providers/Providers";
 
 const geistSans = Manrope({
@@ -41,7 +45,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
       >
-        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('form-ai-theme');var d=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){var d=matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('form-ai-theme');var d=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);var h=document.documentElement;h.classList.toggle('dark',d);h.dataset.theme=d?'dark':'light';h.style.colorScheme=d?'dark':'light'}catch(e){var d=matchMedia('(prefers-color-scheme: dark)').matches;var h=document.documentElement;h.classList.toggle('dark',d);h.dataset.theme=d?'dark':'light';h.style.colorScheme=d?'dark':'light'}` }} />
         <Providers>{children}</Providers>
       </body>
     </html>

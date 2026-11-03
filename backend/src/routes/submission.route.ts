@@ -77,12 +77,24 @@ router.get('/:formId/submissions', authMiddleware, async (req: Request, res: Res
       });
     }
 
-    const submissions = await Submission.find({ formId: req.params.formId })
-      .sort({ submittedAt: -1 });
+    const page = Math.max(1, Number.parseInt(String(req.query.page ?? '1'), 10) || 1);
+    const limit = Math.min(50, Math.max(1, Number.parseInt(String(req.query.limit ?? '10'), 10) || 10));
+    const total = await Submission.countDocuments({ formId: form._id });
+    const submissions = await Submission.find({ formId: form._id })
+      .select('responses submitterEmail uploadedImages submittedAt')
+      .sort({ submittedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
 
     return res.json({
       success: true,
-      data: submissions
+      data: submissions,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
     });
   } catch (error) {
     const err = error as Error;
@@ -90,6 +102,100 @@ router.get('/:formId/submissions', authMiddleware, async (req: Request, res: Res
       success: false,
       error: 'Failed to fetch submissions',
       message: err.message
+    });
+  }
+})
+
+// Aggregated insights for one form: totals, answer rates per question, choice
+// distributions, and a 30-day series for the chart.
+router.get('/:formId/analytics', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const form = await Form.findById(req.params.formId);
+    if (!form || form.userId.toString() !== req.userId) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const formId = form._id;
+    const fields = form.fields ?? [];
+    const choiceFieldIds = fields
+      .filter(field => (field.choices?.length ?? 0) > 0 || field.type === 'RATING')
+      .map(field => field.fieldId)
+      .filter((fieldId): fieldId is string => Boolean(fieldId));
+
+    const now = new Date();
+    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const start = new Date(end.getTime() - 29 * 86_400_000);
+    const seriesRange = parseAnalyticsRange({
+      startDate: start.toISOString().slice(0, 10),
+      endDate: end.toISOString().slice(0, 10),
+      groupBy: 'day',
+    });
+
+    const answeredValue = {
+      $cond: [
+        { $isArray: '$entries.v' },
+        { $gt: [{ $size: '$entries.v' }, 0] },
+        { $and: [{ $ne: ['$entries.v', ''] }, { $ne: ['$entries.v', null] }] },
+      ],
+    };
+
+    const [statsRows, answerRows, valueRows, buckets] = await Promise.all([
+      Submission.aggregate<{ _id: null; total: number; latest: Date | null }>([
+        { $match: { formId } },
+        { $group: { _id: null, total: { $sum: 1 }, latest: { $max: '$submittedAt' } } },
+      ]),
+      Submission.aggregate<{ _id: string; count: number }>([
+        { $match: { formId } },
+        { $project: { entries: { $objectToArray: { $ifNull: ['$responses', {}] } } } },
+        { $unwind: '$entries' },
+        { $match: { $expr: answeredValue } },
+        { $group: { _id: '$entries.k', count: { $sum: 1 } } },
+      ]),
+      choiceFieldIds.length
+        ? Submission.aggregate<{ _id: { k: string; v: unknown }; count: number }>([
+            { $match: { formId } },
+            { $project: { entries: { $objectToArray: { $ifNull: ['$responses', {}] } } } },
+            { $unwind: '$entries' },
+            { $match: { 'entries.k': { $in: choiceFieldIds } } },
+            { $project: { k: '$entries.k', v: { $cond: [{ $isArray: '$entries.v' }, '$entries.v', ['$entries.v']] } } },
+            { $unwind: '$v' },
+            { $match: { v: { $nin: ['', null] } } },
+            { $group: { _id: { k: '$k', v: '$v' }, count: { $sum: 1 } } },
+          ])
+        : Promise.resolve([]),
+      Submission.aggregate<{ _id: string; count: number }>([
+        { $match: { formId, submittedAt: { $gte: seriesRange.start, $lt: seriesRange.endExclusive } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$submittedAt', timezone: 'UTC' } }, count: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
+      ]),
+    ]);
+
+    const answerCounts: Record<string, number> = {};
+    for (const row of answerRows) answerCounts[row._id] = row.count;
+
+    const valueCounts: Record<string, Record<string, number>> = {};
+    for (const row of valueRows) {
+      const field = (valueCounts[row._id.k] ??= {});
+      field[String(row._id.v)] = row.count;
+    }
+
+    const stats = statsRows[0];
+    return res.json({
+      success: true,
+      data: {
+        total: stats?.total ?? 0,
+        latestSubmittedAt: stats?.latest ?? null,
+        answerCounts,
+        valueCounts,
+        series: buildAnalyticsSeries(seriesRange, buckets),
+      },
+    });
+  } catch (error) {
+    const err = error as Error;
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch form analytics',
+      message: err.message,
     });
   }
 })

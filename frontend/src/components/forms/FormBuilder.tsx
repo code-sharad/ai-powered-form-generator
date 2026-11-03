@@ -6,13 +6,12 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { Form, FormField } from '@/types';
 import { SortableFieldItem } from './SortableFieldItem';
 import { AddFieldDialog } from './AddFieldDialog';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Save, Eye } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Button } from '@/components/arc/button/button';
+import { Input } from '@/components/arc/input/input';
+import { Textarea } from '@/components/arc/textarea/textarea';
+import { EmptyState } from '@/components/arc/empty-state/empty-state';
+import { Eye, ListChecks, Save } from 'lucide-react';
+import { toast } from '@/lib/toast';
 
 interface FormBuilderProps {
   initialForm: Form;
@@ -25,6 +24,7 @@ export function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps
   const [description, setDescription] = useState(initialForm.description || '');
   const [fields, setFields] = useState<FormField[]>(initialForm.fields);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -36,33 +36,37 @@ export function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps
         const newIndex = items.findIndex((item) => item.fieldId === over.id);
         return arrayMove(items, oldIndex, newIndex);
       });
+      setIsDirty(true);
     }
   };
 
   const handleDeleteField = (fieldId: string) => {
     setFields((prev) => prev.filter((f) => f.fieldId !== fieldId));
-    toast.success('Field deleted');
+    setIsDirty(true);
+    toast.success('Question deleted');
   };
 
   const handleUpdateField = (updatedField: FormField) => {
     setFields((prev) =>
       prev.map((f) => (f.fieldId === updatedField.fieldId ? updatedField : f))
     );
-    toast.success('Field updated');
+    setIsDirty(true);
+    toast.success('Question updated');
   };
 
   const handleAddField = (newField: FormField) => {
     setFields((prev) => [...prev, newField]);
+    setIsDirty(true);
   };
 
   const handleSave = async () => {
     if (!formName.trim()) {
-      toast.error('Form name is required');
+      toast.error('The form needs a name');
       return;
     }
 
     if (fields.length === 0) {
-      toast.error('Add at least one field');
+      toast.error('Add at least one question');
       return;
     }
 
@@ -74,126 +78,93 @@ export function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps
         description,
         fields,
       });
-      toast.success('Form saved successfully!');
+      setIsDirty(false);
+      toast.success('Changes saved');
     } catch (error) {
-      toast.error('Failed to save form');
+      toast.error('Changes couldn’t be saved', 'Try again.');
       console.error('Save error:', error);
     } finally {
       setIsSaving(false);
     }
   };
 
-  return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Form Settings */}
-      <Card className="bg-card border-border rounded-xl shadow-none">
-        <CardContent className="space-y-6 p-6">
-          <div className="space-y-3">
-            <Label htmlFor="formName" className="text-[13px] font-medium text-foreground">
-              Form Name
-            </Label>
-            <Input
-              id="formName"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              placeholder="Enter form name"
-              className="h-11 bg-background border-input text-foreground placeholder:text-muted-foreground text-[13px]"
-            />
-          </div>
-          <div className="space-y-3">
-            <Label htmlFor="description" className="text-[13px] font-medium text-foreground">
-              Description <span className="text-muted-foreground font-normal">(Optional)</span>
-            </Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the purpose of this form"
-              rows={3}
-              className="bg-background border-input text-foreground placeholder:text-muted-foreground text-[13px] resize-y"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Fields Editor */}
-      <Card className="bg-card border-border rounded-xl shadow-none">
-        <CardHeader className="border-b border-border p-5 sm:p-6">
-          <div className="flex flex-wrap gap-4 justify-between items-start">
-            <div>
-              <CardTitle className="text-base font-semibold text-foreground mb-1">
-                Form Fields
-              </CardTitle>
-              <CardDescription className="text-[12px] text-muted-foreground">
-                Drag to reorder, or focus the handle and use Space and arrow keys.
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <AddFieldDialog onAddField={handleAddField} />
-              <Button
-                variant="ghost"
-                onClick={onPreview}
-                className="h-9 px-3 text-[12px] text-muted-foreground hover:text-primary hover:bg-accent border border-border"
-              >
-                <Eye className="mr-1.5 h-3.5 w-3.5" />
-                Preview
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6">
-          {fields.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent border border-border mb-4">
-                <Save className="h-5 w-5 text-primary" />
-              </div>
-              <p className="text-[13px] text-muted-foreground">
-                No fields yet. Use AI to generate fields or add them manually.
-              </p>
-            </div>
-          ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext
-                items={fields.map((f) => f.fieldId)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-3">
-                  {fields.map((field, index) => (
-                    <SortableFieldItem
-                      key={field.fieldId}
-                      field={field}
-                      index={index}
-                      total={fields.length}
-                      onDelete={handleDeleteField}
-                      onUpdate={handleUpdateField}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-end gap-3">
-        <Button
-          variant="ghost"
-          onClick={onPreview}
-          className="h-10 px-4 text-[13px] text-muted-foreground hover:text-primary hover:bg-accent border border-border"
-        >
-          <Eye className="mr-1.5 h-4 w-4" />
-          Preview Form
-        </Button>
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="h-10 px-4 text-[13px] bg-primary text-primary-foreground hover:bg-primary/90 font-medium disabled:opacity-50"
-        >
-          <Save className="mr-1.5 h-4 w-4" />
-          {isSaving ? 'Saving...' : 'Save Changes'}
-        </Button>
+  return <div className="questions-page">
+    <section className="form-identity" aria-label="Form details">
+      <span className="form-identity-mark" aria-hidden="true">{formName.trim().charAt(0).toUpperCase() || 'F'}</span>
+      <div className="form-identity-fields">
+        <Input
+          id="formName"
+          label="Form name"
+          className="form-name-input"
+          value={formName}
+          onChange={(event) => { setFormName(event.target.value); setIsDirty(true); }}
+          placeholder="Form name"
+        />
+        <Textarea
+          id="description"
+          label="Description (optional)"
+          className="form-description-input"
+          value={description}
+          onChange={(event) => { setDescription(event.target.value); setIsDirty(true); }}
+          placeholder="Tell people what this form is for"
+          rows={2}
+        />
       </div>
-    </div>
-  );
+    </section>
+
+    <section className="questions-panel" aria-labelledby="questions-heading">
+      <header className="questions-head">
+        <div>
+          <h2 id="questions-heading">
+            Questions
+            <span className="questions-count">{fields.length}</span>
+          </h2>
+          <p>Drag to reorder, or focus the handle and use Space and arrow keys.</p>
+        </div>
+        {fields.length > 0 && <div className="questions-head-actions">
+          <AddFieldDialog onAddField={handleAddField} />
+        </div>}
+      </header>
+
+      {fields.length === 0
+        ? <div className="questions-empty">
+            <EmptyState
+              icon={<ListChecks size={22} />}
+              title="No questions yet"
+              description="Add your first question, or describe the form to AI and start from its draft."
+              action={<AddFieldDialog onAddField={handleAddField} />}
+            />
+          </div>
+        : <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={fields.map((field) => field.fieldId)} strategy={verticalListSortingStrategy}>
+              <ol className="question-list">
+                {fields.map((field, index) => <SortableFieldItem
+                  key={field.fieldId}
+                  field={field}
+                  index={index}
+                  total={fields.length}
+                  onDelete={handleDeleteField}
+                  onUpdate={handleUpdateField}
+                />)}
+              </ol>
+            </SortableContext>
+          </DndContext>}
+
+      <footer className="questions-footer">
+        <span className="question-save-state" data-dirty={isDirty ? 'true' : 'false'}>
+          {isDirty ? 'Unsaved changes' : 'All changes saved'}
+        </span>
+        <div className="questions-actions">
+          <Button variant="secondary" size="sm" onClick={onPreview}>
+            <Eye size={14} strokeWidth={1.75} aria-hidden="true" />
+            Preview
+          </Button>
+          <Button size="sm" onClick={handleSave} loading={isSaving} disabled={!isDirty}>
+            <Save size={14} strokeWidth={1.75} aria-hidden="true" />
+            Save changes
+          </Button>
+        </div>
+      </footer>
+    </section>
+  </div>;
 }

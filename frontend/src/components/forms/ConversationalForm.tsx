@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Form } from '@/types';
 import { DynamicField } from './DynamicField';
 import { useFormResponses, isAnswered } from './useFormResponses';
-import { ArrowLeft, ArrowRight, Loader2, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/arc/button/button';
+import { Progress } from '@/components/arc/progress/progress';
+import { ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
 
 interface ConversationalFormProps {
   form: Form;
@@ -39,7 +41,7 @@ export function ConversationalForm({ form, onSubmit }: ConversationalFormProps) 
     if (focusedStep.current === step) return;
     focusedStep.current = step;
     const control = stageRef.current?.querySelector<HTMLElement>(
-      'input:not([type="hidden"]):not([type="file"]), textarea, button[role="combobox"], [role="radio"], [role="checkbox"], .pf-rating-btn'
+      'input:not([type="hidden"]):not([type="file"]), textarea, button[role="combobox"], button[aria-haspopup="dialog"], [role="radio"], [role="checkbox"]'
     );
     control?.focus({ preventScroll: true });
   }, [step]);
@@ -106,11 +108,14 @@ export function ConversationalForm({ form, onSubmit }: ConversationalFormProps) 
     <div className="pfc" onKeyDown={handleKeyDown}>
       <header className="pfc-top">
         <span className="pfc-form-name">{form.formName}</span>
-        <span className="pfc-count" aria-live="polite">{step + 1} of {totalCount}</span>
       </header>
-      <div className="pf-progress pfc-progress" role="progressbar" aria-valuenow={stepProgress} aria-valuemin={0} aria-valuemax={100} aria-label="Form completion">
-        <span style={{ width: `${stepProgress}%` }} />
-      </div>
+      <Progress
+        className="pfc-progress"
+        value={stepProgress}
+        label={`${step + 1} of ${totalCount}`}
+        showValue
+        aria-live="polite"
+      />
 
       {draftRestored && (
         <p className="pf-draft-note pfc-draft">
@@ -131,24 +136,41 @@ export function ConversationalForm({ form, onSubmit }: ConversationalFormProps) 
       </div>
 
       <div className="pfc-actions">
-        <button type="button" className="pf-clear" onClick={goBack} disabled={step === 0 || isSubmitting}>
+        <Button
+          type="button"
+          variant="ghost"
+          className="pf-clear"
+          onClick={goBack}
+          disabled={step === 0 || isSubmitting}
+        >
           <ArrowLeft size={14} /> Back
-        </button>
+        </Button>
         <span className="pfc-hint">
           {field.type === 'MULTI_LINE' || field.type === 'ADDRESS' ? '⌘ + Enter to continue' : 'Enter ↵ to continue'}
         </span>
         {isLast ? (
-          <button type="button" className="pf-submit pfc-next" onClick={handleSubmitClick} disabled={isSubmitting}>
-            {isSubmitting ? (
-              <><Loader2 size={16} className="animate-spin" /> Submitting…</>
-            ) : (
-              <>Submit response <ArrowRight size={15} /></>
-            )}
-          </button>
+          <Button
+            type="button"
+            variant="primary"
+            size="lg"
+            className="pf-submit pfc-next"
+            onClick={handleSubmitClick}
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          >
+            Submit response <ArrowRight size={15} />
+          </Button>
         ) : (
-          <button type="button" className="pf-submit pfc-next" onClick={advance} disabled={isSubmitting}>
+          <Button
+            type="button"
+            variant="primary"
+            size="lg"
+            className="pf-submit pfc-next"
+            onClick={advance}
+            disabled={isSubmitting}
+          >
             Continue <ArrowRight size={15} />
-          </button>
+          </Button>
         )}
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/authService';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toast';
 import type { LoginCredentials, MagicLinkRequest, SignupCredentials } from '@/types';
 
 export function useAuth() {

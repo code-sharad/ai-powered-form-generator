@@ -1,6 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toast';
 
 declare module 'axios' {
   interface AxiosRequestConfig {

@@ -5,37 +5,18 @@
 .dashboard-utilities .brand { font-size: 20px; color: var(--foreground); }.dashboard-utilities .brand-mark i { background: #967cc3; }
 .dashboard-utilities .icon-button { border-color: #e9e3ef; background: transparent; color: #7d6d8b; }
 .dashboard-utility-actions { display: flex; align-items: center; gap: 8px; }
-.analytics-period-controls { display: flex; align-items: center; gap: 7px; }
-.analytics-period-controls [data-slot="select-trigger"] { width: auto; height: 32px; padding: 0 9px 0 10px; gap: 6px; border: 1px solid var(--border); border-radius: 7px; background: var(--card); color: var(--foreground); font-size: 11px; font-weight: 450; line-height: 1; box-shadow: none; }
-.analytics-period-controls [data-slot="select-trigger"]:first-child { min-width: 92px; justify-content: space-between; }
-.analytics-period-controls [data-slot="select-trigger"]:last-child { min-width: 64px; justify-content: space-between; }
-.analytics-period-controls [data-slot="select-trigger"] svg { width: 12px; height: 12px; color: var(--muted-foreground); opacity: .85; }
-.analytics-period-controls [data-slot="select-trigger"] [data-slot="select-value"] { line-height: 1; }
+/* Range presets sit where the old month and year selects did. Arc owns the
+   control; the card only keeps it from shrinking against the heading. */
+.analytics-range { flex: none; max-width: 100%; }
 .dashboard-select-menu { z-index: 60; min-width: max(7rem, var(--radix-select-trigger-width)); max-height: var(--radix-select-content-available-height); border: 1px solid var(--border); border-radius: 10px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 12px 30px #2416321f, 0 2px 7px #2416320f; }
 .dashboard-select-menu [data-slot="select-item"] { min-height: 30px; padding: 6px 30px 6px 9px; border-radius: 6px; font-size: 12px; line-height: 1.35; }
 .dashboard-select-menu [data-slot="select-item"] svg { width: 13px; height: 13px; }
 .dashboard-select-menu [data-slot="select-scroll-up-button"], .dashboard-select-menu [data-slot="select-scroll-down-button"] { color: var(--muted-foreground); }
 .analytics-timezone { margin-left: 4px; font-size: 8px; }
 .analytics-summary { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
-.response-chart-container { height: 276px; width: 100%; }
-.visx-response-chart { position: relative; height: 232px; width: 100%; }
-.response-chart-container:has(.visx-response-chart:focus-visible) { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 8px; }
-.visx-response-chart:focus-visible { outline: none; }
-.response-chart-tooltip { position: absolute; pointer-events: none; display: grid; gap: 4px; min-width: 125px; border: 1px solid var(--border); background: var(--popover); color: var(--popover-foreground); border-radius: 8px; padding: 9px 11px; font-size: 10px; box-shadow: 0 4px 15px #00000010; }
-.response-chart-tooltip span { color: var(--muted-foreground); }.response-chart-tooltip strong { font-size: 11px; font-weight: 550; }
-.response-chart-tooltip small { color: var(--muted-foreground); font-size: 9px; }
-.response-chart-hit-area { cursor: crosshair; touch-action: pan-y; }
 .analytics-total-label { display: block; color: var(--muted-foreground); font-size: 10px; margin-bottom: 20px; }
-.response-chart-summary { display: flex; justify-content: space-between; align-items: center; gap: 15px; min-height: 38px; margin-top: 6px; color: var(--muted-foreground); font-size: 10px; }
-.response-peak-summary { display: inline-flex; align-items: center; gap: 8px; }
-.response-peak-summary > i { height: 7px; width: 7px; background: var(--response-peak); border-radius: 50%; flex-shrink: 0; }
-.response-peak-summary > span { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.response-peak-summary strong { font-weight: 500; color: var(--foreground); }
-.response-chart-granularity { white-space: nowrap; }
-.analytics-zero-note { text-align: center; color: var(--muted-foreground); font-size: 10px; margin-top: 7px; }
-.analytics-empty { min-height: 276px; display: grid; place-items: center; color: var(--muted-foreground); font-size: 12px; }
 .dashboard-analytics { padding: 24px 26px 18px; background: #fff; border: 1px solid #eae5f0; border-radius: 14px; margin-bottom: 29px; }
-.dashboard-analytics-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.dashboard-analytics-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 18px; }
 .dashboard-analytics-heading h2 { font-size: 13px; font-weight: 550; color: #504358; }
 .dashboard-analytics-heading p { font-size: 10px; color: #776b81; margin-top: 5px; }
 .dashboard-form-totals { display: flex; gap: 21px; color: #7a6d85; font-size: 10px; padding-top: 2px; }.dashboard-form-totals strong { color: #52415f; font-weight: 550; margin-right: 3px; }
@@ -85,8 +66,8 @@
 .dashboard-prompt-dock .prompt-panel-footer { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: row; align-items: center; justify-content: flex-end; gap: 15px; margin: 0; padding: 0; pointer-events: none; }
 .dashboard-prompt-dock .prompt-panel-footer > span { color: #776281; font-size: 10px; }
 .dashboard-prompt-dock .prompt-panel .action-button { pointer-events: auto; width: auto; min-height: 35px; padding-inline: 14px; border-radius: 9px; background: #8062bd; border-color: #8062bd; color: #fff; font-size: 11px; flex-shrink: 0; }
-.simple-dashboard :where(a, button, input, textarea, select):focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; transition: none; }
-.dashboard-prompt-dock:has(textarea:focus-visible) { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+.simple-dashboard :where(a, button, input, textarea, select):focus-visible { outline: 2px solid var(--focus-color); outline-offset: 3px; transition: none; }
+.dashboard-prompt-dock:has(textarea:focus-visible) { outline: 2px solid var(--focus-color); outline-offset: 3px; }
 .dashboard-prompt-dock .prompt-panel textarea:focus-visible { outline: none; box-shadow: none; }
 .simple-dashboard [id] { scroll-margin-bottom: 220px; }
 @media (hover: hover) and (pointer: fine) { .simple-form-table tbody tr:hover { background: #f7f4fb; }.simple-form-name:hover { color: #7658b4; }.simple-form-table .icon-button:hover { background: #eee7f6; }.dashboard-prompt-dock .prompt-panel .action-button:hover { background: #6e4fab; border-color: #6e4fab; } }
@@ -98,5 +79,25 @@
   .dashboard-prompt-dock { width: calc(100% - 24px); bottom: max(12px, env(safe-area-inset-bottom)); border-radius: 15px; }.dashboard-prompt-dock .prompt-panel textarea { font-size: 16px; min-height: 68px; max-height: 150px; padding: 14px 14px 6px; border-radius: 14px 14px 0 0; }.dashboard-prompt-dock .prompt-panel-footer { right: 10px; bottom: 10px; }.dashboard-prompt-dock .prompt-panel .action-button { font-size: 11px; padding-inline: 12px; gap: 6px; min-height: 36px; }
 }
 @media (max-width: 360px) { .dashboard-prompt-dock .prompt-panel-footer > span { max-width: 115px; }.dashboard-form-totals { gap: 8px; } }
-@media (max-width: 400px) { .dashboard-analytics-heading { flex-wrap: wrap; gap: 12px; }.analytics-period-controls { width: 100%; }.analytics-period-controls [data-slot="select-trigger"] { height: 35px; }.analytics-period-controls [data-slot="select-trigger"]:first-child { flex: 1; min-width: 0; }.analytics-period-controls [data-slot="select-trigger"]:last-child { min-width: 70px; } }
-@media (max-width: 600px) { .response-chart-summary { font-size: 9px; gap: 8px; }.response-peak-summary > span { gap: 5px; }.response-chart-granularity { display: none; } }
+
+/* Arc adoption. The toolbar and table now come from Arc, so these rules only
+   set layout and the product's surfaces; component internals stay in Arc. */
+.simple-dashboard { background: var(--background); color: var(--foreground); }
+.dashboard-utilities .brand { color: var(--foreground); }
+.dashboard-utilities .brand-mark i { background: var(--foreground); }
+.simple-dashboard .empty-state { background: transparent; border-color: var(--border); }
+.simple-search { flex: 1 1 240px; min-width: 0; max-width: 300px; }
+.simple-search > div { width: 100%; }
+.simple-search label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.simple-form-tools { flex-wrap: wrap; align-items: center; }
+.simple-form-filters { flex-wrap: wrap; justify-content: flex-end; }
+.simple-form-filters > div[role="group"] { max-width: 100%; }
+.dashboard-prompt-dock { background: var(--surface); border-color: var(--border); }
+
+/* Arc textarea/button inside the prompt dock. The label is for screen readers. */
+.prompt-field label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.prompt-field .prompt-notice { padding: 0 18px; margin: 2px 0 0; }
+.prompt-field .prompt-notice-slot:empty { display: none; }
+.dashboard-prompt-dock .prompt-panel-footer button { pointer-events: auto; }
+.dashboard-prompt-dock .prompt-panel .prompt-alert { margin: 4px 12px 0; }
+.simple-form-icon { background: var(--surface-muted); border-color: var(--border); color: var(--text-secondary); }

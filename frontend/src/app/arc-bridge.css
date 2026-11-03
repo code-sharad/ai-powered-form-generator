@@ -1,0 +1,28 @@
+/* Bridges the app's type scale to Arc's tokens, so Arc components inherit the
+   product's fonts instead of falling back to a generic sans-serif. Arc's own
+   foundation.css must load first; everything here only reads from it. */
+:root {
+  --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Arc sizes controls at 44px, the app's dense editor at 36px. Inside the
+   builder only, tighten the shared control heights to match the old chrome. */
+.arc-dense {
+  --control-height-sm: 2rem;
+  --control-height-md: 2.25rem;
+  --control-height-lg: 2.75rem;
+  --radius-control: 0.625rem;
+}
+
+/* The app's older sheets used a violet primary and a blue focus ring. Arc's
+   neutral palette and foreground-as-primary are the house style now, so the
+   remaining product surfaces read as one system instead of two. */
+:root,
+.dark {
+  --primary: var(--foreground);
+  --primary-foreground: var(--background);
+  --ring: var(--border-strong);
+  --blue: var(--foreground);
+}

@@ -1,44 +1,84 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { Brand } from '@/components/layout/Brand';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/components/providers/ThemeProvider';
 import { formService } from '@/services/formService';
 import { AIPromptBar } from '@/components/dashboard/AIPromptBar';
 import { ResponseAnalytics } from '@/components/dashboard/ResponseAnalytics';
-import { ThemeToggle } from '@/components/layout/ThemeToggle';
-import { Copy, ExternalLink, FileText, Loader2, LogOut, MoreHorizontal, Pencil, Plus, Radio, Search, Sparkles, Trash2 } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import toast from 'react-hot-toast';
+import { Copy, ExternalLink, FileText, Radio, Pencil, Sparkles, Trash2 } from 'lucide-react';
+import { Button } from '@/components/arc/button/button';
+import { DropdownMenu } from '@/components/arc/dropdown-menu/dropdown-menu';
+import { UserMenu } from '@/components/arc/user-menu/user-menu';
+import { SearchField } from '@/components/arc/search-field/search-field';
+import SegmentedControl from '@/components/arc/segmented-control/segmented-control';
+import { Badge } from '@/components/arc/badge/badge';
+import { Alert } from '@/components/arc/alert/alert';
+import { EmptyState } from '@/components/arc/empty-state/empty-state';
+import { Skeleton } from '@/components/arc/skeleton/skeleton';
+import SortableDataTable, { type DataColumn } from '@/components/arc/sortable-data-table/sortable-data-table';
+import { toast } from '@/lib/toast';
 import type { Form } from '@/types';
 import './dashboard.css';
+import '@/app/response-chart.css';
 
-function FormActions({ form, pending, onCopy, onPublish, onDelete }: {
-  form: Form;
-  pending: boolean;
-  onCopy: (slug: string) => void;
-  onPublish: (id: string) => void;
-  onDelete: (form: Form) => void;
-}) {
-  return <DropdownMenu modal={false}>
-    <DropdownMenuTrigger asChild><button type="button" className="icon-button" disabled={pending} aria-label={`Actions for ${form.formName}`}>{pending ? <Loader2 size={16} className="animate-spin" /> : <MoreHorizontal size={17} />}</button></DropdownMenuTrigger>
-    <DropdownMenuContent align="end">
-      <DropdownMenuItem asChild><Link href={`/dashboard/forms/${form._id}`}><Pencil size={14} /> Edit form</Link></DropdownMenuItem>
-      {form.sharing?.isPublic ? <>
-        <DropdownMenuItem onClick={() => onCopy(form.slug)}><Copy size={14} /> Copy link</DropdownMenuItem>
-        <DropdownMenuItem asChild><Link href={`/forms/${form.slug}`} target="_blank" rel="noopener noreferrer"><ExternalLink size={14} /> Open public form</Link></DropdownMenuItem>
-      </> : <DropdownMenuItem onClick={() => onPublish(form._id)}><Radio size={14} /> Publish form</DropdownMenuItem>}
-      <DropdownMenuSeparator />
-      <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(form)}><Trash2 size={14} /> Delete form</DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>;
+type FormRow = {
+  key: string;
+  name: ReactNode;
+  status: ReactNode;
+  responses: number;
+  updated: number;
+  actions: ReactNode;
+};
+
+function buildRows(
+  forms: Form[],
+  pendingId: string | null,
+  handlers: {
+    copy: (slug: string) => void;
+    publish: (id: string) => void;
+    remove: (form: Form) => void;
+  },
+): FormRow[] {
+  return forms.map(form => {
+    const isPublished = Boolean(form.sharing?.isPublic);
+    return {
+      key: form._id,
+      name: <Link href={`/dashboard/forms/${form._id}`} className="simple-form-name">
+        <span className="simple-form-icon"><FileText size={17} /></span>
+        <span>{form.formName}</span>
+      </Link>,
+      status: <Badge tone={isPublished ? 'success' : 'neutral'} dot pill>{isPublished ? 'Published' : 'Draft'}</Badge>,
+      responses: form.submissionStats?.count ?? 0,
+      updated: new Date(form.updatedAt).getTime(),
+      actions: <DropdownMenu
+        label="Actions"
+        items={[
+          { label: 'Edit form', icon: <Pencil size={14} />, onSelect: () => { window.location.assign(`/dashboard/forms/${form._id}`); } },
+          ...(isPublished
+            ? [
+                { label: 'Copy link', icon: <Copy size={14} />, onSelect: () => handlers.copy(form.slug) },
+                {
+                  label: 'Open public form',
+                  icon: <ExternalLink size={14} />,
+                  onSelect: () => window.open(`/forms/${form.slug}`, '_blank', 'noopener,noreferrer'),
+                },
+              ]
+            : [{ label: 'Publish form', icon: <Radio size={14} />, onSelect: () => handlers.publish(form._id), disabled: pendingId === form._id }]),
+          { label: 'Delete form', icon: <Trash2 size={14} />, destructive: true, separatorBefore: true, onSelect: () => handlers.remove(form) },
+        ]}
+      />,
+    };
+  });
 }
 
 function DashboardWorkspace() {
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [forms, setForms] = useState<Form[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -67,7 +107,7 @@ function DashboardWorkspace() {
 
   async function copyLink(slug: string) {
     try { await navigator.clipboard.writeText(`${window.location.origin}/forms/${slug}`); toast.success('Form link copied'); }
-    catch { toast.error('Couldn’t copy the link. Try opening the public form instead.'); }
+    catch { toast.error('Couldn’t copy the link', 'Try opening the public form instead.'); }
   }
 
   async function deleteForm(form: Form) {
@@ -78,14 +118,14 @@ function DashboardWorkspace() {
       toast.success('Form deleted');
       await loadForms();
       setAnalyticsRefresh(value => value + 1);
-    } catch { toast.error('Form couldn’t be deleted. Please try again.'); }
+    } catch { toast.error('Form couldn’t be deleted', 'Please try again.'); }
     finally { setPendingId(null); }
   }
 
   async function publishForm(id: string) {
     setPendingId(id);
     try { await formService.publishForm(id); toast.success('Form published'); await loadForms(); }
-    catch { toast.error('Form couldn’t be published. Please try again.'); }
+    catch { toast.error('Form couldn’t be published', 'Please try again.'); }
     finally { setPendingId(null); }
   }
 
@@ -93,31 +133,80 @@ function DashboardWorkspace() {
     .filter(form => form.formName.toLowerCase().includes(search.trim().toLowerCase()) && (filter === 'all' || (filter === 'published' ? form.sharing?.isPublic : !form.sharing?.isPublic)))
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   const publishedCount = forms.filter(form => form.sharing?.isPublic).length;
+  const earliestFormAt = forms.reduce<string | undefined>((earliest, form) => (!earliest || form.createdAt < earliest ? form.createdAt : earliest), undefined);
+  const rows = buildRows(visibleForms, pendingId, { copy: copyLink, publish: publishForm, remove: deleteForm });
+
+  const columns: DataColumn<FormRow>[] = [
+    { key: 'name', label: 'Name', sortable: false, render: value => value as ReactNode },
+    { key: 'status', label: 'Status', sortable: false, render: value => value as ReactNode },
+    { key: 'responses', label: 'Responses', numeric: true },
+    { key: 'updated', label: 'Updated', numeric: false, render: (_, row) => new Date(row.updated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) },
+    { key: 'actions', label: 'Actions', sortable: false, render: value => value as ReactNode, width: '132px' },
+  ];
 
   return <div className="simple-dashboard">
     <a href="#workspace" className="skip-link">Skip to workspace</a>
     <main id="workspace" className="simple-dashboard-main">
       <h1 className="sr-only">Form dashboard</h1>
-      <div className="dashboard-utilities"><Brand /><div className="dashboard-utility-actions"><ThemeToggle /><button type="button" className="icon-button" aria-label="Log out" title="Log out" onClick={logout}><LogOut size={16} /></button></div></div>
 
-      <ResponseAnalytics formCount={isLoading || error ? null : forms.length} publishedCount={isLoading || error ? null : publishedCount} refreshKey={analyticsRefresh} firstYear={user?.createdAt ? new Date(user.createdAt).getUTCFullYear() : undefined} />
+      <div className="dashboard-utilities">
+        <Brand />
+        <div className="dashboard-utility-actions">
+          <UserMenu
+            user={{ name: user?.name ?? 'Your account', email: user?.email ?? '' }}
+            theme={theme}
+            onThemeChange={next => setTheme(next === 'light' || next === 'dark' ? next : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')}
+            showName
+            onSignOut={logout}
+          />
+        </div>
+      </div>
 
-      {error && <div role="alert" className="workspace-alert"><span>{error}</span><button type="button" onClick={loadForms}>Try again</button></div>}
+      <ResponseAnalytics formCount={isLoading || error ? null : forms.length} publishedCount={isLoading || error ? null : publishedCount} refreshKey={analyticsRefresh} earliestAt={user?.createdAt ?? earliestFormAt} />
+
+      {error && <Alert tone="danger" title={error} onDismiss={() => setError('')} className="workspace-alert">
+        <Button variant="secondary" size="sm" onClick={loadForms}>Try again</Button>
+      </Alert>}
 
       <section id="your-forms" aria-label="Your forms">
-        <div className="simple-form-tools"><div className="simple-search"><Search size={14} /><label htmlFor="search-forms" className="sr-only">Search forms</label><input id="search-forms" type="search" placeholder="Search forms…" value={search} onChange={event => setSearch(event.target.value)} className="search-input" /></div><div className="simple-form-filters"><Select value={filter} onValueChange={setFilter}><SelectTrigger id="filter-forms" className="filter-select" aria-label="Filter by status"><SelectValue /></SelectTrigger><SelectContent className="dashboard-select-menu" position="popper" align="end" sideOffset={5}><SelectItem value="all">All forms</SelectItem><SelectItem value="published">Published</SelectItem><SelectItem value="draft">Drafts</SelectItem></SelectContent></Select><button type="button" className="icon-button" aria-label="Create a new form" title="Create a new form" onClick={focusPrompt}><Plus size={17} /></button></div></div>
+        <div className="simple-form-tools">
+          <div className="simple-search">
+            <SearchField label="Search forms" placeholder="Search forms…" value={search} onValueChange={setSearch} />
+          </div>
+          <div className="simple-form-filters">
+            <SegmentedControl
+              label="Filter by status"
+              value={filter}
+              onValueChange={setFilter}
+              options={[
+                { value: 'all', label: 'All' },
+                { value: 'published', label: 'Published' },
+                { value: 'draft', label: 'Drafts' },
+              ]}
+            />
+          </div>
+        </div>
 
-        {isLoading ? <div className="empty-state" role="status"><Loader2 size={22} className="animate-spin" /><p>Loading your forms…</p></div> : error ? null : visibleForms.length === 0 ? <div className="empty-state"><FileText size={27} /><h2>{forms.length === 0 ? 'Create your first form.' : 'No matching forms.'}</h2><p>{forms.length === 0 ? 'Describe what you need in the prompt below.' : 'Try another name or choose a different status.'}</p>{forms.length === 0 ? <button type="button" className="text-link" onClick={focusPrompt}>Start with a prompt <Sparkles size={14} /></button> : <button type="button" className="text-link" onClick={() => { setSearch(''); setFilter('all'); }}>Clear filters</button>}</div> : <table className="simple-form-table">
-          <caption className="sr-only">Your forms, sorted by most recently updated</caption>
-          <thead><tr><th scope="col">Name</th><th scope="col">Status</th><th scope="col">Responses</th><th scope="col">Updated</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
-          <tbody>{visibleForms.map(form => <tr key={form._id}>
-            <td><Link href={`/dashboard/forms/${form._id}`} className="simple-form-name"><span className="simple-form-icon"><FileText size={17} /></span><span>{form.formName}<span className={`simple-mobile-status ${form.sharing?.isPublic ? 'is-published' : ''}`}>{form.sharing?.isPublic ? 'Published' : 'Draft'}</span></span></Link></td>
-            <td><span className={`simple-status ${form.sharing?.isPublic ? 'is-published' : ''}`}><i />{form.sharing?.isPublic ? 'Published' : 'Draft'}</span></td>
-            <td>{form.submissionStats?.count ?? 0}</td>
-            <td>{new Date(form.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
-            <td><FormActions form={form} pending={pendingId === form._id} onCopy={copyLink} onPublish={publishForm} onDelete={deleteForm} /></td>
-          </tr>)}</tbody>
-        </table>}
+        {isLoading
+          ? <Skeleton label="Loading your forms" lines={5} />
+          : error
+            ? null
+            : visibleForms.length === 0
+              ? <EmptyState
+                  icon={<FileText size={24} />}
+                  title={forms.length === 0 ? 'Create your first form.' : 'No matching forms.'}
+                  description={forms.length === 0 ? 'Describe what you need in the prompt below and AI drafts the questions.' : 'Try another name or choose a different status.'}
+                  action={forms.length === 0
+                    ? <Button variant="secondary" onClick={focusPrompt}>Start with a prompt <Sparkles size={14} /></Button>
+                    : <Button variant="secondary" onClick={() => { setSearch(''); setFilter('all'); }}>Clear filters</Button>}
+                />
+              : <SortableDataTable<FormRow>
+                  rows={rows}
+                  columns={columns}
+                  rowKey="key"
+                  caption="Your forms, sorted by most recently updated"
+                  itemName={{ one: 'form', other: 'forms' }}
+                />}
       </section>
     </main>
     <div className="dashboard-prompt-dock"><AIPromptBar compact onGenerated={loadForms} /></div>

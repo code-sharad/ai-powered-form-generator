@@ -4,7 +4,9 @@ import { Form, FormField } from '@/types';
 import { DynamicField } from './DynamicField';
 import { ConversationalForm } from './ConversationalForm';
 import { useFormResponses } from './useFormResponses';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { Button } from '@/components/arc/button/button';
+import { Progress } from '@/components/arc/progress/progress';
+import { ArrowRight } from 'lucide-react';
 
 interface FormRendererProps {
   form: Form;
@@ -35,13 +37,13 @@ function ClassicForm({ form, onSubmit }: FormRendererProps) {
         {form.category && form.category !== 'custom' && <p className="pf-kicker">{form.category}</p>}
         <h1>{form.formName}</h1>
         {form.description && <p>{form.description}</p>}
-        <div className="pf-progress-meta">
-          <span>{totalCount} {totalCount === 1 ? 'question' : 'questions'}</span>
-          <span aria-live="polite">{answeredCount} answered</span>
-        </div>
-        <div className="pf-progress" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label="Form completion">
-          <span style={{ width: `${progress}%` }} />
-        </div>
+        <Progress
+          className="pf-progress"
+          value={progress}
+          label={totalCount === 0 ? 'No questions yet' : `${answeredCount} of ${totalCount} answered`}
+          showValue
+          aria-live="polite"
+        />
         {draftRestored && <p className="pf-draft-note">Picked up where you left off.</p>}
       </header>
 
@@ -57,16 +59,25 @@ function ClassicForm({ form, onSubmit }: FormRendererProps) {
         ))}
 
         <div className="pf-actions">
-          <button type="button" className="pf-clear" onClick={clear} disabled={isSubmitting}>
+          <Button
+            type="button"
+            variant="ghost"
+            className="pf-clear"
+            onClick={clear}
+            disabled={isSubmitting}
+          >
             Clear
-          </button>
-          <button type="submit" className="pf-submit" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <><Loader2 size={16} className="animate-spin" /> Submitting…</>
-            ) : (
-              <>Submit response <ArrowRight size={15} /></>
-            )}
-          </button>
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            className="pf-submit"
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          >
+            Submit response <ArrowRight size={15} />
+          </Button>
         </div>
       </form>
     </div>

@@ -101,6 +101,24 @@ export interface GenerateFormRequest {
 export type FormGenerationRequest = GenerateFormRequest;
 
 // Submission Types
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface FormAnalytics {
+  total: number;
+  latestSubmittedAt: string | null;
+  /** How many responses answered each question, keyed by field id. */
+  answerCounts: Record<string, number>;
+  /** Choice and rating tallies, keyed by field id then answer value. */
+  valueCounts: Record<string, Record<string, number>>;
+  /** Daily totals for the last 30 days, oldest first. */
+  series: Array<{ date: string; count: number; label: string }>;
+}
+
 export interface Submission {
   _id: string;
   formId: string;

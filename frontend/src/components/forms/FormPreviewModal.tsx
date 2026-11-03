@@ -2,13 +2,8 @@
 
 import { Form } from '@/types';
 import { FormRenderer } from './FormRenderer';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/arc/dialog/dialog';
+import '@/app/builder.css';
 
 interface FormPreviewModalProps {
   form: Form | null;
@@ -27,14 +22,12 @@ export function FormPreviewModal({ form, isOpen, onClose }: FormPreviewModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Form Preview</DialogTitle>
-          <DialogDescription>
-            This is how your form will appear to users
-          </DialogDescription>
-        </DialogHeader>
-        <div className="pf mt-4">
+      <DialogContent
+        title="Form preview"
+        description="This is how your form will appear to respondents."
+        className="preview-dialog"
+      >
+        <div className="pf pf-preview">
           <FormRenderer form={form} onSubmit={handlePreviewSubmit} />
         </div>
       </DialogContent>

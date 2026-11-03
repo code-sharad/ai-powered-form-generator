@@ -8,7 +8,7 @@ import { formService } from '@/services/formService';
 import { submissionService } from '@/services/submissionService';
 import { FormRenderer } from '@/components/forms/FormRenderer';
 import { AlertCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toast';
 
 export default function PublicFormPage() {
   const params = useParams();

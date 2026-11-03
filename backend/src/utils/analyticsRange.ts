@@ -36,7 +36,12 @@ export function parseAnalyticsRange(query: Record<string, unknown>, now = new Da
     start = new Date(endExclusive.getTime() - days * DAY_MS);
   }
   const periodDays = (endExclusive.getTime() - start.getTime()) / DAY_MS;
-  if (periodDays < 1 || periodDays > 366) throw new RangeError('Choose an ordered date range of up to 366 days.');
+  // A daily series stays capped at a year so the response stays small. Monthly
+  // buckets carry far fewer points, so the range presets (2Y, Max) can span years.
+  const maxDays = groupBy === 'month' ? 366 * 20 : 366;
+  if (periodDays < 1 || periodDays > maxDays) {
+    throw new RangeError(groupBy === 'month' ? 'Choose an ordered date range of up to 20 years.' : 'Choose an ordered date range of up to 366 days.');
+  }
   return { start, endExclusive, periodDays, groupBy };
 }
 

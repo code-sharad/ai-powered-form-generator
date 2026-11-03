@@ -1,10 +1,14 @@
 'use client';
 
 import { useId, useRef, useState } from 'react';
-import { ArrowRight, CircleAlert, Sparkles, Loader2, Wifi, WifiOff } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { formService, type GenerationRequestError } from '@/services/formService';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
-import toast from 'react-hot-toast';
+import { Textarea } from '@/components/arc/textarea/textarea';
+import { Button } from '@/components/arc/button/button';
+import { Alert } from '@/components/arc/alert/alert';
+import type { AlertTone } from '@/components/arc/alert/alert';
+import { toast } from '@/lib/toast';
 
 type AIPromptBarProps = {
   onGenerated?: () => void;
@@ -24,6 +28,8 @@ const failureMessages = {
   request: 'Couldn’t generate your form. Your prompt is still here. Please try again.',
 };
 
+type Notice = { tone: AlertTone; message: string };
+
 export function AIPromptBar({ onGenerated, compact = false }: AIPromptBarProps) {
   const [prompt, setPrompt] = useState('');
   const [generation, setGeneration] = useState<GenerationState>({ status: 'idle' });
@@ -34,14 +40,15 @@ export function AIPromptBar({ onGenerated, compact = false }: AIPromptBarProps) 
   const isGenerating = generation.status === 'pending';
   const isOffline = connectionStatus === 'offline';
   const isInvalid = generation.status === 'failed' && generation.reason === 'validation';
-  const notice = isOffline
-    ? { role: 'status', message: 'You’re offline. Keep writing; you can generate when you’re back online.', Icon: WifiOff }
+
+  const notice: Notice | null = isOffline
+    ? { tone: 'warning', message: 'You’re offline. Keep writing; you can generate when you’re back online.' }
     : isGenerating
-      ? { role: 'status', message: 'Creating your form. This may take a moment.', Icon: Sparkles }
+      ? { tone: 'info', message: 'Creating your form. This may take a moment.' }
       : connectionStatus === 'reconnected'
-        ? { role: 'status', message: 'You’re back online. Review your prompt and generate when you’re ready.', Icon: Wifi }
+        ? { tone: 'success', message: 'You’re back online. Review your prompt and generate when you’re ready.' }
         : generation.status === 'failed'
-          ? { role: 'alert', message: failureMessages[generation.reason], Icon: CircleAlert }
+          ? { tone: 'danger', message: failureMessages[generation.reason] }
           : null;
 
   function editPrompt(value: string) {
@@ -70,7 +77,7 @@ export function AIPromptBar({ onGenerated, compact = false }: AIPromptBarProps) 
     if (result.ok) {
       setGeneration({ status: 'succeeded' });
       setPrompt('');
-      toast.success('Form generated successfully!');
+      toast.success('Form generated');
       onGenerated?.();
     } else if (result.error === 'session') {
       setGeneration({ status: 'idle' });
@@ -87,46 +94,35 @@ export function AIPromptBar({ onGenerated, compact = false }: AIPromptBarProps) 
   };
 
   return (
-    <section className={`prompt-panel ${compact ? 'prompt-panel-compact' : ''}`} id="create-form" aria-labelledby="prompt-title">
+    <section className={`prompt-panel prompt-field ${compact ? 'prompt-panel-compact' : ''}`} id="create-form" aria-labelledby="prompt-title">
       <h2 className={compact ? 'sr-only' : 'prompt-panel-heading'} id="prompt-title"><Sparkles size={19} aria-hidden="true" /> What would you like to create?</h2>
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="form-prompt" className="sr-only">Describe your form</label>
-          <textarea
-            id="form-prompt"
-            ref={textareaRef}
-            value={prompt}
-            onChange={(e) => editPrompt(e.target.value)}
-            aria-describedby={noticeId}
-            aria-invalid={isInvalid}
-            aria-busy={isGenerating}
-            onKeyDown={handleKeyDown}
-            placeholder={compact ? 'Describe the form you want to create…' : 'A registration form for a design workshop, with name, email, and experience level…'}
-            rows={compact ? 2 : 3}
-            readOnly={isGenerating}
-          />
-          <div id={noticeId} className="prompt-notice" role={notice?.role ?? 'status'} aria-atomic="true">{notice && <><notice.Icon size={15} aria-hidden="true" /><span>{notice.message}</span></>}</div>
-          <div className="prompt-panel-footer">{!compact && <span>Describe your idea. AI takes care of the first draft.</span>}<button
-            type="submit"
-            disabled={isGenerating || isOffline}
-            className="action-button small"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                Generating...
-              </>
-            ) : (
-              <>
-                Generate form <ArrowRight size={15} aria-hidden="true" />
-              </>
-            )}
-          </button></div>
-        </form>
-        {!compact && <div className="prompt-examples" role="group" aria-label="Suggested prompts">{[
-          ['Event registration', 'Create an event registration form with name, email, and dietary preferences.'],
-          ['Customer feedback', 'Create a customer feedback form with name, email, a satisfaction rating, and comments.'],
-          ['Job application', 'Create a job application form with full name, email, experience, and a resume upload.'],
-        ].map(([label, value]) => <button key={label} type="button" disabled={isGenerating} onClick={() => { editPrompt(value); textareaRef.current?.focus(); }}>{label}</button>)}</div>}
+      <form onSubmit={handleSubmit}>
+        <Textarea
+          ref={textareaRef}
+          label="Describe your form"
+          id="form-prompt"
+          value={prompt}
+          onChange={(e) => editPrompt(e.target.value)}
+          aria-describedby={noticeId}
+          aria-invalid={isInvalid}
+          aria-busy={isGenerating}
+          onKeyDown={handleKeyDown}
+          placeholder={compact ? 'Describe the form you want to create…' : 'A registration form for a design workshop, with name, email, and experience level…'}
+          rows={compact ? 2 : 3}
+          readOnly={isGenerating}
+        />
+        <div className="prompt-notice-slot" id={noticeId}>
+          {notice && (notice.tone === 'danger'
+            ? <Alert tone="danger" title={notice.message} />
+            : <p className="prompt-notice" role="status">{notice.message}</p>)}
+        </div>
+        <div className="prompt-panel-footer">
+          {!compact && <span>Describe your idea. AI takes care of the first draft.</span>}
+          <Button type="submit" size="sm" loading={isGenerating} disabled={isOffline}>
+            Generate form
+          </Button>
+        </div>
+      </form>
     </section>
   );
 }

@@ -26,4 +26,7 @@ const submissionSchema = new mongoose.Schema({
   submittedAt: { type: Date, default: Date.now },
 });
 
+// Pagination and per-form aggregations both start from this pair.
+submissionSchema.index({ formId: 1, submittedAt: -1 });
+
 export const Submission = mongoose.model('Submission', submissionSchema);

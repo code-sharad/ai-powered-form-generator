@@ -1,7 +1,7 @@
 :root {
   color-scheme: light;
   --ring: #007aff;
-  --focus-ring: #007aff;
+  --focus-color: #007aff;
   --response-line: #9278ce;
   --response-grid: #eee9f4;
   --response-label: #786b85;
@@ -33,7 +33,7 @@ html.dark {
   --border: #48484a;
   --input: #545456;
   --ring: #0a84ff;
-  --focus-ring: #0a84ff;
+  --focus-color: #0a84ff;
   --ink: #f5f5f7;
   --subtle: #aeaeb2;
   --line: #48484a;
@@ -55,12 +55,12 @@ html.dark {
 
 /* One focus treatment across native controls and custom components. */
 :is(.simple-dashboard, .visitors-site, .auth-shell, .dashboard-layout) :is(a, button, input, textarea, select, summary):focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 2px solid var(--focus-color);
   outline-offset: 3px;
   box-shadow: none;
   transition: none;
 }
-:is(input, textarea) { caret-color: var(--focus-ring); }
+:is(input, textarea) { caret-color: var(--focus-color); }
 ::selection { background: #007aff33; color: inherit; }
 .dark ::selection { background: #0a84ff66; color: #fff; }
 
@@ -104,9 +104,9 @@ html.dark {
 .dark .auth-story-copy > p, .dark .auth-story-footer, .dark .auth-form-wrap > p,
 .dark .auth-switch, .dark .auth-form small, .dark .auth-story-steps > span { color: var(--muted-foreground); }
 .dark .auth-story .brand-mark i { background: #d1d1d6; }
-.dark .auth-form input, .dark .prompt-panel textarea { background: #242426; color: var(--foreground); border-color: var(--input); }
-.dark .auth-form input::placeholder, .dark .prompt-panel textarea::placeholder { color: #aeaeb2; }
-.dark .password-input button, .dark .workspace-header .text-link { color: #c7c7cc; }
+
+
+
 .dark .action-button.secondary, .dark .icon-button { color: #e5e5ea; background: #3a3a3c; border-color: #545456; }
 .dark .action-button:not(.secondary) { background: var(--dark-action); border-color: var(--dark-action); color: #fff; }
 .dark .workspace-stat { background: var(--card); }.dark .workspace-stat strong { color: var(--foreground); }

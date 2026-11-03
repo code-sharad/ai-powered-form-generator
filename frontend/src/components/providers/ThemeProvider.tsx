@@ -3,7 +3,15 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
-const ThemeContext = createContext<{ theme: Theme; toggleTheme: () => void } | null>(null);
+const ThemeContext = createContext<{ theme: Theme; setTheme: (theme: Theme) => void; toggleTheme: () => void } | null>(null);
+
+/** Arc listens to data-theme, the app's older sheets to .dark. Both are kept in sync from one place. */
+function applyTheme(theme: Theme) {
+  const root = document.documentElement;
+  root.classList.toggle('dark', theme === 'dark');
+  root.dataset.theme = theme;
+  root.style.colorScheme = theme;
+}
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
@@ -14,8 +22,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       let saved: string | null = null;
       try { saved = localStorage.getItem('form-ai-theme'); } catch { /* System preference still works without storage. */ }
       const next = saved === 'light' || saved === 'dark' ? saved : media.matches ? 'dark' : 'light';
-      document.documentElement.classList.toggle('dark', next === 'dark');
-      document.documentElement.style.colorScheme = next;
+      applyTheme(next);
       setTheme(next);
     }
     syncTheme();
@@ -25,14 +32,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.classList.toggle('dark', next === 'dark');
-    document.documentElement.style.colorScheme = next;
+    selectTheme(theme === 'dark' ? 'light' : 'dark');
+  }
+
+  function selectTheme(next: Theme) {
+    applyTheme(next);
     try { localStorage.setItem('form-ai-theme', next); } catch { /* Keep the selected theme for this session. */ }
     setTheme(next);
   }
 
-  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={{ theme, setTheme: selectTheme, toggleTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

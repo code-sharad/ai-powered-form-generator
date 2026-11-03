@@ -8,9 +8,58 @@ A full-stack application to generate, build, publish, and collect submissions fo
 
 ### Tech Stack
 - Frontend: Next.js 15, TypeScript, Tailwind CSS, shadcn/ui, Recharts
+- UI system: [Arc](https://uiarc.dev) components (CSS modules + Motion) for the product surfaces
 - Backend: Bun/Node, TypeScript, Express
 - Auth: JWT auth flow (client store + API), password or magic-link email sign-in
 - Storage/Uploads: Cloudinary (configurable)
+
+### UI system
+
+Product surfaces use Arc components installed through the shadcn registry. The
+components live in `frontend/src/components/arc/`; do not hand-edit their module
+styles, because reinstalling an item overwrites it.
+
+```bash
+cd frontend
+npx shadcn@latest add @uiarc/button @uiarc/input   # or any @uiarc item
+```
+
+`components.json` registers `@uiarc`. `src/app/layout.tsx` imports
+`@/components/arc/foundation.css` after the app stylesheets, so Arc owns
+`--background`, `--surface`, `--border`, `--accent`, `--danger` and the control
+heights. `src/app/arc-bridge.css` maps the product's fonts and the one legacy
+token the app still needs (`--wash`, the muted hover fill that shadcn primitives
+expect from `bg-accent`).
+
+Dark mode is driven by both class and attribute. `ThemeProvider` and the inline
+script in the root layout set `.dark` for the older app sheets and `data-theme`
+for Arc. Toasts come from Arc's stack: `src/lib/toast.ts` exposes the short
+`toast.success()` facade, and `src/components/providers/ArcToaster.tsx` mounts
+the stack once.
+
+Migrated surfaces: authentication, the dashboard toolbar, form list, analytics
+summary and prompt dock, the builder shell and its fields/response tabs, the
+public form fields and progress, the preview dialog, and the file question.
+The marketing landing page keeps its own editorial design system.
+
+### Dummy analytics data
+
+`backend/scripts/seed-analytics.ts` fills the dashboard chart with two and a
+half years of realistic response history. Seeded rows are tagged in
+`metadata.userAgent`, so they can be removed without touching real data.
+
+```bash
+cd backend
+bun scripts/seed-analytics.ts                        # demo@formora.test / Demo12345
+bun scripts/seed-analytics.ts --email you@example.com --backdate
+bun scripts/seed-analytics.ts --clean                # remove seeded responses only
+```
+
+Reruns are safe: the script removes earlier seeded rows before inserting and
+recomputes each form's response count. `--backdate` moves the account and its
+first form's start date back to the seeded range, which is what makes the Max
+preset cover the history on an existing account. Use `--months` to change the
+window (default 30).
 
 
 

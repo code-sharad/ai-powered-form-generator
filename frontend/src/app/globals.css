@@ -25,8 +25,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
+  --color-accent-foreground: var(--wash-ink);
+  --color-accent: var(--wash);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -69,6 +69,10 @@
 
   --accent: oklch(0.96 0 0);
   --accent-foreground: oklch(0.15 0 0);
+  /* Arc owns --accent as the strong brand color, so the muted hover wash the
+     shadcn primitives expect lives under its own name. */
+  --wash: oklch(0.96 0 0);
+  --wash-ink: oklch(0.15 0 0);
 
   --destructive: oklch(0.577 0.245 27.325); /* Red for errors */
 
@@ -116,6 +120,8 @@
 
   --accent: oklch(0.18 0 0);
   --accent-foreground: oklch(0.95 0 0);
+  --wash: oklch(0.18 0 0);
+  --wash-ink: oklch(0.95 0 0);
 
   --destructive: oklch(0.704 0.191 22.216);
 
