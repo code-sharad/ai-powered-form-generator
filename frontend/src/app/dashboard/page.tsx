@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { Brand } from '@/components/layout/Brand';
@@ -10,7 +9,7 @@ import { useTheme } from '@/components/providers/ThemeProvider';
 import { formService } from '@/services/formService';
 import { AIPromptBar } from '@/components/dashboard/AIPromptBar';
 import { ResponseAnalytics } from '@/components/dashboard/ResponseAnalytics';
-import { Copy, ExternalLink, FileText, Radio, Pencil, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowRight, Copy, ExternalLink, FileText, Radio, Pencil, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/arc/button/button';
 import { DropdownMenu } from '@/components/arc/dropdown-menu/dropdown-menu';
 import { UserMenu } from '@/components/arc/user-menu/user-menu';
@@ -20,60 +19,33 @@ import { Badge } from '@/components/arc/badge/badge';
 import { Alert } from '@/components/arc/alert/alert';
 import { EmptyState } from '@/components/arc/empty-state/empty-state';
 import { Skeleton } from '@/components/arc/skeleton/skeleton';
-import SortableDataTable, { type DataColumn } from '@/components/arc/sortable-data-table/sortable-data-table';
+import { getFieldTypeMeta } from '@/components/forms/fieldTypeMeta';
 import { toast } from '@/lib/toast';
 import type { Form } from '@/types';
 import './dashboard.css';
 import '@/app/response-chart.css';
 
-type FormRow = {
-  key: string;
-  name: ReactNode;
-  status: ReactNode;
-  responses: number;
-  updated: number;
-  actions: ReactNode;
-};
-
-function buildRows(
-  forms: Form[],
-  pendingId: string | null,
-  handlers: {
-    copy: (slug: string) => void;
-    publish: (id: string) => void;
-    remove: (form: Form) => void;
-  },
-): FormRow[] {
-  return forms.map(form => {
-    const isPublished = Boolean(form.sharing?.isPublic);
-    return {
-      key: form._id,
-      name: <Link href={`/dashboard/forms/${form._id}`} className="simple-form-name">
-        <span className="simple-form-icon"><FileText size={17} /></span>
-        <span>{form.formName}</span>
-      </Link>,
-      status: <Badge tone={isPublished ? 'success' : 'neutral'} dot pill>{isPublished ? 'Published' : 'Draft'}</Badge>,
-      responses: form.submissionStats?.count ?? 0,
-      updated: new Date(form.updatedAt).getTime(),
-      actions: <DropdownMenu
-        label="Actions"
-        items={[
-          { label: 'Edit form', icon: <Pencil size={14} />, onSelect: () => { window.location.assign(`/dashboard/forms/${form._id}`); } },
-          ...(isPublished
-            ? [
-                { label: 'Copy link', icon: <Copy size={14} />, onSelect: () => handlers.copy(form.slug) },
-                {
-                  label: 'Open public form',
-                  icon: <ExternalLink size={14} />,
-                  onSelect: () => window.open(`/forms/${form.slug}`, '_blank', 'noopener,noreferrer'),
-                },
-              ]
-            : [{ label: 'Publish form', icon: <Radio size={14} />, onSelect: () => handlers.publish(form._id), disabled: pendingId === form._id }]),
-          { label: 'Delete form', icon: <Trash2 size={14} />, destructive: true, separatorBefore: true, onSelect: () => handlers.remove(form) },
-        ]}
-      />,
-    };
-  });
+function FormActions({ form, pending, onCopy, onPublish, onDelete }: {
+  form: Form;
+  pending: boolean;
+  onCopy: (slug: string) => void;
+  onPublish: (id: string) => void;
+  onDelete: (form: Form) => void;
+}) {
+  const isPublished = Boolean(form.sharing?.isPublic);
+  return <DropdownMenu
+    label="Actions"
+    items={[
+      { label: 'Edit form', icon: <Pencil size={14} />, onSelect: () => { window.location.assign(`/dashboard/forms/${form._id}`); } },
+      ...(isPublished
+        ? [
+            { label: 'Copy link', icon: <Copy size={14} />, onSelect: () => onCopy(form.slug) },
+            { label: 'Open public form', icon: <ExternalLink size={14} />, onSelect: () => window.open(`/forms/${form.slug}`, '_blank', 'noopener,noreferrer') },
+          ]
+        : [{ label: 'Publish form', icon: <Radio size={14} />, onSelect: () => onPublish(form._id), disabled: pending }]),
+      { label: 'Delete form', icon: <Trash2 size={14} />, destructive: true, separatorBefore: true, onSelect: () => onDelete(form) },
+    ]}
+  />;
 }
 
 function DashboardWorkspace() {
@@ -96,7 +68,11 @@ function DashboardWorkspace() {
 
   useEffect(() => { loadForms(); }, [loadForms]);
 
-  function focusPrompt() { document.getElementById('form-prompt')?.focus({ preventScroll: true }); }
+  function focusPrompt() {
+    const prompt = document.getElementById('form-prompt');
+    if (window.matchMedia('(max-width: 640px)').matches) prompt?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    prompt?.focus({ preventScroll: true });
+  }
 
   useEffect(() => {
     function syncHash() { if (window.location.hash === '#create-form') document.getElementById('form-prompt')?.focus({ preventScroll: true }); }
@@ -134,15 +110,6 @@ function DashboardWorkspace() {
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   const publishedCount = forms.filter(form => form.sharing?.isPublic).length;
   const earliestFormAt = forms.reduce<string | undefined>((earliest, form) => (!earliest || form.createdAt < earliest ? form.createdAt : earliest), undefined);
-  const rows = buildRows(visibleForms, pendingId, { copy: copyLink, publish: publishForm, remove: deleteForm });
-
-  const columns: DataColumn<FormRow>[] = [
-    { key: 'name', label: 'Name', sortable: false, render: value => value as ReactNode },
-    { key: 'status', label: 'Status', sortable: false, render: value => value as ReactNode },
-    { key: 'responses', label: 'Responses', numeric: true },
-    { key: 'updated', label: 'Updated', numeric: false, render: (_, row) => new Date(row.updated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) },
-    { key: 'actions', label: 'Actions', sortable: false, render: value => value as ReactNode, width: '132px' },
-  ];
 
   return <div className="simple-dashboard">
     <a href="#workspace" className="skip-link">Skip to workspace</a>
@@ -200,13 +167,40 @@ function DashboardWorkspace() {
                     ? <Button variant="secondary" onClick={focusPrompt}>Start with a prompt <Sparkles size={14} /></Button>
                     : <Button variant="secondary" onClick={() => { setSearch(''); setFilter('all'); }}>Clear filters</Button>}
                 />
-              : <SortableDataTable<FormRow>
-                  rows={rows}
-                  columns={columns}
-                  rowKey="key"
-                  caption="Your forms, sorted by most recently updated"
-                  itemName={{ one: 'form', other: 'forms' }}
-                />}
+              : <div className="form-cards">
+                  {visibleForms.map(form => {
+                    const isPublished = Boolean(form.sharing?.isPublic);
+                    const fields = form.fields ?? [];
+                    return <article className="form-card" key={form._id}>
+                      <div className="form-card-head">
+                        <span className="form-card-mark" aria-hidden="true">{form.formName.trim().charAt(0).toUpperCase() || 'F'}</span>
+                        <div className="form-card-copy">
+                          <div className="form-card-title-row">
+                            <Link href={`/dashboard/forms/${form._id}`} className="form-card-title">{form.formName}</Link>
+                            <Badge tone={isPublished ? 'success' : 'neutral'} dot pill>{isPublished ? 'Published' : 'Draft'}</Badge>
+                          </div>
+                          {form.description && <p className="form-card-description">{form.description}</p>}
+                        </div>
+                        <div className="form-card-actions">
+                          <FormActions form={form} pending={pendingId === form._id} onCopy={copyLink} onPublish={publishForm} onDelete={deleteForm} />
+                        </div>
+                      </div>
+                      {fields.length > 0 && <ul className="form-card-fields" aria-label={`Questions in ${form.formName}`}>
+                        {fields.slice(0, 4).map(field => {
+                          const meta = getFieldTypeMeta(field.type);
+                          const FieldIcon = meta.icon;
+                          return <li key={field.fieldId}><FieldIcon size={12} aria-hidden="true" /><span>{field.displayName}</span></li>;
+                        })}
+                        {fields.length > 4 && <li className="form-card-more">+{fields.length - 4}</li>}
+                      </ul>}
+                      <div className="form-card-footer">
+                        <span className="form-card-stat"><strong>{(form.submissionStats?.count ?? 0).toLocaleString()}</strong> responses</span>
+                        <span className="form-card-updated">Updated {new Date(form.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        <Link href={`/dashboard/forms/${form._id}`} className="form-card-open">Open <ArrowRight size={13} aria-hidden="true" /></Link>
+                      </div>
+                    </article>;
+                  })}
+                </div>}
       </section>
     </main>
     <div className="dashboard-prompt-dock"><AIPromptBar compact onGenerated={loadForms} /></div>

@@ -148,8 +148,10 @@ router.post('/:formId', authMiddleware, async (req: Request, res: Response) => {
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
+    // The dashboard cards show a short question summary, so send only the
+    // field labels and types instead of the whole field documents.
     const forms = (await Form.find({ userId })
-      .select('-fields')
+      .select('formName slug description category presentation sharing submissionStats createdAt updatedAt fields.fieldId fields.displayName fields.type')
       .sort({ createdAt: -1 }))
 
 

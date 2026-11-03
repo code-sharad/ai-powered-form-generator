@@ -14,13 +14,13 @@
 .dashboard-select-menu [data-slot="select-scroll-up-button"], .dashboard-select-menu [data-slot="select-scroll-down-button"] { color: var(--muted-foreground); }
 .analytics-timezone { margin-left: 4px; font-size: 8px; }
 .analytics-summary { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
-.analytics-total-label { display: block; color: var(--muted-foreground); font-size: 10px; margin-bottom: 20px; }
-.dashboard-analytics { padding: 24px 26px 18px; background: #fff; border: 1px solid #eae5f0; border-radius: 14px; margin-bottom: 29px; }
+.analytics-total-label { display: block; color: var(--text-secondary); font-size: 11px; margin-bottom: 18px; }
+.dashboard-analytics { padding: 22px 24px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-panel); margin-bottom: 22px; }
 .dashboard-analytics-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 18px; }
-.dashboard-analytics-heading h2 { font-size: 13px; font-weight: 550; color: #504358; }
-.dashboard-analytics-heading p { font-size: 10px; color: #776b81; margin-top: 5px; }
-.dashboard-form-totals { display: flex; gap: 21px; color: #7a6d85; font-size: 10px; padding-top: 2px; }.dashboard-form-totals strong { color: #52415f; font-weight: 550; margin-right: 3px; }
-.dashboard-response-total { display: block; font-size: 37px; font-weight: 500; letter-spacing: -1.6px; margin-block: 9px 3px; }
+.dashboard-analytics-heading h2 { font-size: 18px; font-weight: 500; letter-spacing: -.02em; color: var(--foreground); }
+.dashboard-analytics-heading p { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.dashboard-form-totals { display: flex; gap: 21px; color: var(--text-secondary); font-size: 11px; padding-top: 4px; }.dashboard-form-totals strong { color: var(--foreground); font-weight: 600; margin-right: 3px; }
+.dashboard-response-total { display: block; font-size: 40px; font-weight: 500; letter-spacing: -1.8px; margin-block: 10px 2px; }
 .dashboard-chart { min-height: 276px; }.dashboard-chart > p, .dashboard-chart-message { display: grid; place-content: center; min-height: 276px; color: #75677f; font-size: 12px; text-align: center; }.dashboard-chart-message { gap: 12px; }
 .simple-form-tools { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 15px; }
 .simple-form-tools .search-input { width: 260px; height: 38px; font-size: 12px; border-color: #e6e1ec; border-radius: 8px; padding-left: 34px; background: #fff; }
@@ -101,3 +101,161 @@
 .dashboard-prompt-dock .prompt-panel-footer button { pointer-events: auto; }
 .dashboard-prompt-dock .prompt-panel .prompt-alert { margin: 4px 12px 0; }
 .simple-form-icon { background: var(--surface-muted); border-color: var(--border); color: var(--text-secondary); }
+
+
+/* Form cards: a richer replacement for the table, with each form's identity,
+   its questions, and its activity in one place. */
+.form-cards { display: grid; gap: 12px; }
+.form-card {
+  padding: 18px 20px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+}
+.form-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-resting); }
+.form-card-head { display: flex; align-items: flex-start; gap: 14px; }
+.form-card-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding-bottom: 2px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--arc-gradient);
+  color: var(--foreground);
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-size: 24px;
+  line-height: 1;
+}
+.form-card-copy { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.form-card-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.form-card-title {
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font-size: 16px;
+  font-weight: 550;
+  letter-spacing: -.02em;
+  line-height: 1.3;
+  text-decoration: none;
+}
+.form-card-title:hover { text-decoration: underline; text-underline-offset: 3px; }
+.form-card-description {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+.form-card-actions { flex: none; }
+.form-card-fields { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; }
+.form-card-fields li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 220px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+.form-card-fields li svg { flex: none; color: var(--text-muted); }
+.form-card-fields li span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.form-card-fields .form-card-more { color: var(--text-muted); }
+.form-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.form-card-stat strong { color: var(--foreground); font-weight: 600; font-variant-numeric: tabular-nums; }
+.form-card-updated { color: var(--text-muted); }
+.form-card-open { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; color: var(--foreground); font-size: 11px; text-decoration: none; }
+.form-card-open:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 640px) {
+  .form-card { padding: 16px; border-radius: var(--radius-control); }
+  .form-card-mark { width: 38px; height: 38px; border-radius: 11px; font-size: 21px; }
+  .form-card-title { font-size: 15px; }
+  .form-card-head { gap: 10px; }
+  .form-card-footer { gap: 10px; }
+}
+
+
+@media (max-width: 640px) {
+  /* The composer joins the page on phones instead of covering the cards. */
+  .dashboard-prompt-dock {
+    position: static;
+    left: auto;
+    bottom: auto;
+    width: calc(100% - 32px);
+    margin: 4px auto 24px;
+    transform: none;
+  }
+  .simple-dashboard-main { padding-bottom: 24px; }
+}
+
+/* Compact dock: one bar, not a large empty box, so it no longer covers the
+   bottom of the form cards on shorter screens. */
+.dashboard-prompt-dock {
+  width: min(850px, calc(100% - 48px));
+  border-color: var(--border);
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+}
+.dashboard-prompt-dock .prompt-panel form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "field action" "note note";
+  align-items: end;
+  gap: 4px 8px;
+  min-height: 0;
+  padding: 8px 8px 8px 12px;
+}
+.dashboard-prompt-dock .prompt-panel form > div:first-child { grid-area: field; min-width: 0; }
+.dashboard-prompt-dock .prompt-notice-slot { grid-area: note; }
+.dashboard-prompt-dock .prompt-field textarea {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  height: 44px;
+  max-height: 120px;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: none;
+}
+.dashboard-prompt-dock .prompt-field textarea::placeholder { color: var(--text-secondary); }
+.dashboard-prompt-dock .prompt-field textarea:focus-visible { outline: none; box-shadow: none; }
+.dashboard-prompt-dock .prompt-panel-footer {
+  position: static;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  pointer-events: auto;
+}
+.dashboard-prompt-dock .prompt-field .prompt-notice { padding: 0 4px 2px; margin: 0; font-size: 11px; }
+
+@media (max-width: 640px) {
+  .dashboard-prompt-dock .prompt-field textarea { font-size: 16px; }
+}
